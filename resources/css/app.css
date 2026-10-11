@@ -1,0 +1,247 @@
+@import 'tailwindcss';
+@import '@tabler/icons-webfont/dist/tabler-icons.min.css';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@theme {
+  --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    'Segoe UI Symbol', 'Noto Color Emoji';
+
+  /* — surfaces (sampled 1:1 from the screenshot) — */
+  --color-canvas: #0d0e12;
+  /* page background */
+  --color-panel: #11141a;
+  /* cards, list container */
+  --color-rail: #14171f;
+  /* sidebar + top bar */
+  --color-raised: #1c202b;
+  /* active nav, badges, secondary buttons */
+
+  /* — borders — */
+  --color-line: #1e232e;
+  /* card / container borders  →  border-line */
+  --color-line-soft: #181c24;
+  /* list row dividers         →  divide-line-soft */
+  --color-line-strong: #2a2f3b;
+  /* hover / pressed           →  border-line-strong */
+
+  /* — text — */
+  --color-ink: #e6edf3;
+  /* headings, row titles */
+  --color-muted: #8b949e;
+  /* nav labels, descriptions */
+  --color-faint: #6e7681;
+  /* section labels, timestamps, placeholders */
+  --color-brand-50: #ecfdf5;
+  --color-brand-100: #d1fae5;
+  --color-brand-200: #a7f3d0;
+  --color-brand-300: #6ee7b7;
+  --color-brand-400: #34d399;
+  --color-brand-500: #10b981;
+  --color-brand-600: #059669;
+  --color-brand-700: #047857;
+  --color-brand-800: #065f46;
+  --color-brand-900: #064e3b;
+  --color-brand-950: #022c22;
+
+  /* — type (the design runs one notch smaller than stock Tailwind) — */
+  --text-2xs: 0.6875rem;
+  /* 11px — section labels, pills, timestamps */
+  --text-2xs--line-height: 1rem;
+  --text-13: 0.8125rem;
+  /* 13px — nav, buttons, row titles */
+  --text-13--line-height: 1.25rem;
+
+  /* — radii / shadows — */
+  --radius-card: 0.75rem;
+  /* rounded-card */
+
+  --shadow-panel: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+  --shadow-menu: 0 12px 32px -8px rgb(0 0 0 / 0.75), 0 0 0 1px rgb(255 255 255 / 0.04);
+  --shadow-inset: inset 0 1px 0 rgb(255 255 255 / 0.03);
+  --shadow-glow-brand: 0 0 0 3px rgb(16 185 129 / 0.12);
+
+  --animate-fade-in: fade-in 0.15s ease-out;
+}
+
+/* ------------------------------------------------------------------
+ | Base
+ * ----------------------------------------------------------------*/
+@layer base {
+  html {
+    color-scheme: dark;
+    /* native controls (scrollbars, search ✕) follow the theme */
+  }
+
+  body {
+    @apply bg-canvas font-sans text-ink antialiased;
+  }
+
+  /* Alpine: hide elements until Alpine has initialised. */
+  [x-cloak]:not([data-sidebar]) {
+    display: none !important;
+  }
+
+  /* The sidebar is only "off-canvas" below lg, so it may only be hidden
+     below lg. On desktop it is always visible — even before Alpine boots. */
+  @media (max-width: 1023.98px) {
+    [data-sidebar][x-cloak] {
+      display: none !important;
+    }
+  }
+
+  /* dark, unobtrusive scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-raised) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-raised;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    @apply bg-line-strong;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* keyboard focus that matches the brand */
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-500/40 ring-offset-2 ring-offset-canvas;
+  }
+}
+
+/* ------------------------------------------------------------------
+| Components — the design system, so your markup stays short
+* ----------------------------------------------------------------*/
+@layer components {
+
+  /* — surfaces ——————————————————————————————— */
+  .card {
+    @apply rounded-card border border-line bg-panel;
+  }
+
+  .card-hover {
+    @apply transition-colors hover:border-line-strong hover:bg-[#131720];
+  }
+
+  /* — sidebar navigation —————————————————————— */
+  .nav-item {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-13 font-medium;
+    @apply text-muted transition-colors duration-150;
+    @apply hover:bg-raised/70 hover:text-ink;
+  }
+
+  .nav-item-active {
+    @apply bg-raised text-ink shadow-inset;
+  }
+
+  .nav-item-icon {
+    @apply size-[18px] shrink-0 text-faint transition-colors;
+  }
+
+  .nav-item:hover .nav-item-icon {
+    @apply text-muted;
+  }
+
+  .nav-item-active .nav-item-icon {
+    @apply text-brand-400;
+  }
+
+  .nav-section {
+    @apply px-3 pb-2 text-2xs font-semibold uppercase tracking-[0.14em] text-faint;
+  }
+
+  /* — buttons —————————————————————————————————
+     (v4 cannot @apply a custom class, so the shared "btn" utilities
+     are repeated on each variant instead of composing `.btn`.) */
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-13 font-medium;
+    @apply transition-colors duration-150 disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply bg-brand-500 text-brand-950 shadow-inset;
+    @apply hover:bg-brand-400 active:bg-brand-600;
+  }
+
+  .btn-secondary {
+    @apply border border-line bg-raised text-ink;
+    @apply hover:border-line-strong hover:bg-[#232836];
+  }
+
+  .btn-ghost {
+    @apply text-muted hover:bg-raised hover:text-ink;
+  }
+
+  /* — forms ——————————————————————————————————— */
+  .input {
+    @apply h-9 w-full rounded-lg border border-line bg-panel text-13 text-ink placeholder:text-faint;
+    @apply transition-colors focus:border-brand-500/60 focus:bg-[#181b20] focus:outline-none focus-visible:outline-none focus:ring-0 focus:shadow-none;
+  }
+
+  /* — misc ———————————————————————————————————— */
+  .kbd {
+    @apply rounded border border-line bg-raised px-1.5 py-0.5 font-sans text-[10px] leading-4 text-faint;
+  }
+
+  .pill,
+  .pill-brand {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-2xs font-medium;
+  }
+
+  .pill-brand {
+    @apply border-brand-500/20 bg-brand-500/10 text-brand-400;
+  }
+
+  /* — auth ——————————————————————————————————— */
+  .auth-grid {
+    background-color: var(--color-canvas);
+    background-image:
+      linear-gradient(to right, rgb(255 255 255 / 0.035) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.035) 1px, transparent 1px);
+    background-size: 48px 48px;
+    background-position: center center;
+  }
+
+  .auth-card {
+    @apply relative overflow-hidden rounded-2xl border border-line bg-rail shadow-panel;
+  }
+
+  /* brand hairline along the top of the card */
+  .auth-card::before {
+    content: '';
+    position: absolute;
+    inset-inline: 14%;
+    top: -1px;
+    height: 3px;
+    background: linear-gradient(90deg,
+        transparent,
+        color-mix(in oklab, var(--color-brand-400) 75%, transparent),
+        transparent);
+  }
+
+  .check {
+    @apply size-4 shrink-0 cursor-pointer appearance-none rounded-sm border border-line-strong bg-canvas;
+    @apply checked:border-brand-500 checked:bg-brand-500;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 10px 10px;
+  }
+
+  .check:checked {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23022c22' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5l10 -10'/%3E%3C/svg%3E");
+  }
+}
