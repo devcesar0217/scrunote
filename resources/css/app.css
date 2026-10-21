@@ -1,5 +1,8 @@
 @import 'tailwindcss';
 @import '@tabler/icons-webfont/dist/tabler-icons.min.css';
+@import './auth.css';
+@import './workspace.css';
+@import './notes.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -114,9 +117,13 @@
     background: transparent;
   }
 
-  /* keyboard focus that matches the brand */
-  :focus-visible {
-    @apply outline-none ring-2 ring-brand-500/40 ring-offset-2 ring-offset-canvas;
+  /* Requested visual treatment: editable fields retain keyboard behavior without a focus ring. */
+  input:focus,
+  textarea:focus,
+  select:focus,
+  [contenteditable='true']:focus {
+    outline: none !important;
+    box-shadow: none !important;
   }
 }
 
@@ -189,7 +196,7 @@
   /* — forms ——————————————————————————————————— */
   .input {
     @apply h-9 w-full rounded-lg border border-line bg-panel text-13 text-ink placeholder:text-faint;
-    @apply transition-colors focus:border-brand-500/60 focus:bg-[#181b20] focus:outline-none focus-visible:outline-none focus:ring-0 focus:shadow-none;
+    @apply transition-colors focus:outline-none focus-visible:outline-none focus:ring-0 focus:shadow-none;
   }
 
   /* — misc ———————————————————————————————————— */

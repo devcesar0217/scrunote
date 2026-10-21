@@ -2,23 +2,29 @@
 
 namespace App\Providers;
 
+use App\Models\Note;
+use App\Policies\NotePolicy;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
-        //
+        // Laravel merges its own mailer defaults into app config. Keep only
+        // the inert in-memory transport for this login/registration-only scope.
+        $this->app['config']->set('mail.mailers', [
+            'array' => $this->app['config']->get('mail.mailers.array'),
+        ]);
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
-        //
+        Gate::policy(Note::class, NotePolicy::class);
+        RateLimiter::for('login-ip', fn (Request $request) => Limit::perMinute(30)->by((string) $request->ip()));
+        RateLimiter::for('registration', fn (Request $request) => Limit::perMinute(10)->by((string) $request->ip()));
     }
 }

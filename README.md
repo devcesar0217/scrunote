@@ -1,3 +1,19 @@
+# Scrunote web application — Phase 2, revised
+
+**Login and registration only**, with logout, remembered login, validation and secure session protection. Password recovery and outbound mail setup have been removed at your request. No email service or mail credentials are required.
+
+Registration preserves the existing first name, last name and username fields. The signed-in root is an authentication checkpoint; the shared workspace and modules are not served yet.
+
+- [Windows PowerShell setup and local verification](docs/PHASE-2-WINDOWS.md)
+- [Revised seven-section phase report](docs/PHASE-2-REPORT.md)
+- The update ZIP's root **README.md** maps every included file to its local destination and lists obsolete files to delete if you applied the earlier Phase 2 package.
+
+Keep your own `.env` and existing `APP_KEY`. Do not run a destructive database reset. Feature tests require a separate disposable MySQL database/account. Existing dependencies, migrations and future module files are preserved.
+
+**Stop at Phase 2 and obtain explicit approval before Phase 3.** The original Laravel scaffold information follows for framework reference.
+
+---
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">

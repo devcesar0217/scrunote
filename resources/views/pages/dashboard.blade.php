@@ -1,107 +1,97 @@
 @extends('layouts.app')
-
 @section('title', 'Overview · Scrunote')
-@section('page-title', 'Overview')
-
-@php
-    $hour = now()->hour;
-    $greeting = match (true) {
-        $hour < 12 => 'Good morning',
-        $hour < 18 => 'Good afternoon',
-        default => 'Good evening',
-    };
-    $name = auth()->user()->name ?? 'Alex';
-
-    // In a real app these come from the controller / Livewire component.
-    $recentWork = [
-        ['title' => 'api-auth-middleware.md', 'type' => 'Docs', 'desc' => 'Zero-trust header parsing with asymmetric ECDSA JWT verification fallback', 'time' => '12m ago'],
-        ['title' => 'Postgres Connection Pooling', 'type' => 'Note', 'desc' => 'Optimizing PgBouncer pool limits and Prisma timeouts in serverless Lambdas', 'time' => '1h ago'],
-        ['title' => 'AWS ECS Deploy Pipeline', 'type' => 'Checklist', 'desc' => 'Task definitions revision matrix and parameter store KMS key triggers', 'time' => '3h ago'],
-        ['title' => 'Redis Cluster Caching Strategies', 'type' => 'Note', 'desc' => 'Preventing cache stampedes with probabilistic early expiration algorithms', 'time' => 'Yesterday'],
-    ];
-@endphp
 
 @section('content')
-    {{-- ── Page header ──────────────────────────────────────────────── --}}
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-            <h1 class="text-2xl font-semibold tracking-tight text-ink">
-                {{ $greeting }}, {{ $name }}
-            </h1>
-
-            <p class="mt-1.5 text-13 text-muted">
-                All systems encrypted and in sync.
-            </p>
+    <section class="workspace-hero" aria-labelledby="overview-heading">
+        <div class="workspace-hero-copy">
+            <p class="workspace-eyebrow">Personal developer workspace</p>
+            <h1 id="overview-heading">Welcome back, {{ $identity['first_name'] }}.</h1>
+            <p class="workspace-hero-description">Keep ideas, Markdown references, and account credentials organized in one private place.</p>
+            <p class="workspace-hero-meta">Your Notes are connected. Other modules follow in their approved phases.</p>
         </div>
+        <a href="{{ route('dashboard') }}" class="workspace-secondary-button workspace-refresh" aria-label="Refresh overview">
+            <x-icon name="refresh" /> Refresh
+        </a>
+    </section>
 
-        <div class="flex shrink-0 items-center gap-2">
-            <x-button icon="plus">New Note</x-button>
-
-            <x-button icon="file-plus" variant="secondary">
-                Doc
-            </x-button>
-
-            <x-button icon="lock" variant="secondary">
-                Vault
-            </x-button>
-       
+    <section aria-labelledby="workspace-sections-heading">
+        <div class="workspace-section-heading">
+            <h2 id="workspace-sections-heading">Your workspace</h2>
+            <p>Select a card to open that section</p>
         </div>
-    </div>
-
-    {{-- ── Stat cards ───────────────────────────────────────────────── --}}
-    <div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <x-stat-card
-            label="Vault Status"
-            value="AES-256"
-            accent="Active"
-            meta="Argon2id · Zero-Knowledge"
-        />
-
-        <x-stat-card
-            label="Credentials"
-            value="14 Stored Keys"
-            meta="0 compromised · Auto-lock in 15m"
-        />
-
-        <x-stat-card
-            label="Storage &amp; Sync"
-            value="Local Offline"
-            meta="18 documents · Last synced 2m ago"
-        />
-    </div>
-
-    {{-- ── Recent work ──────────────────────────────────────────────── --}}
-    <section class="mt-8">
-        <div class="flex items-center justify-between pb-3">
-            <h2 class="text-13 font-semibold text-ink">Recent Work</h2>
-
-            <a href="#" class="text-2xs text-faint transition-colors hover:text-muted">
-                {{ count($recentWork) }} entries
-            </a>
-        </div>
-
-        <div class="divide-y divide-line-soft overflow-hidden rounded-card border border-line bg-panel">
-            @foreach ($recentWork as $item)
-                <a href="#" class="flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-[#141821]">
-                    <div class="min-w-0 flex-1">
-                        <div class="flex items-center gap-2">
-                            <span class="truncate text-13 font-semibold text-ink">
-                                {{ $item['title'] }}
-                            </span>
-
-                            <x-badge>{{ $item['type'] }}</x-badge>
-                        </div>
-
-                        <p class="mt-1 truncate text-xs text-muted">
-                            {{ $item['desc'] }}
-                        </p>
-                    </div>
-
-                    <span class="shrink-0 text-2xs text-faint sm:text-xs">
-                        {{ $item['time'] }}
-                    </span>
+        <div class="workspace-module-grid">
+            @foreach ($modules as $module)
+                <a href="{{ $module['url'] }}" class="workspace-module-card" data-module="{{ $module['id'] }}">
+                    <span class="workspace-module-icon"><x-icon :name="$module['icon']" /></span>
+                    <x-icon name="arrow-up-right" class="workspace-module-arrow" />
+                    @if ($module['id'] === 'notes')
+                        <span class="workspace-module-count">{{ $notesCount }}</span>
+                        <span class="workspace-module-label">{{ Str::plural('Note', $notesCount) }}</span>
+                        <span class="workspace-module-phase">Connected</span>
+                    @else
+                        <span class="workspace-module-count" aria-hidden="true">—</span>
+                        <span class="sr-only">Count not available.</span>
+                        <span class="workspace-module-label">{{ $module['label'] === 'Secure Vault' ? 'Password Vault Entries' : $module['label'] }}</span>
+                        <span class="workspace-module-phase">{{ $module['phase'] }}</span>
+                    @endif
                 </a>
             @endforeach
         </div>
     </section>
+
+    <div class="workspace-overview-panels">
+        <section class="workspace-panel workspace-activity" aria-labelledby="activity-heading">
+            <header class="workspace-panel-heading">
+                <div>
+                    <h2 id="activity-heading">Recent notes</h2>
+                    <p>Your latest saved Notes changes</p>
+                </div>
+                <span class="workspace-status-badge">{{ $notesCount }} saved</span>
+            </header>
+            @if ($recentNotes->isNotEmpty())
+                <div class="workspace-activity-list">
+                    @foreach ($recentNotes as $note)
+                        <a href="{{ route('notes.show', $note) }}" class="workspace-activity-item">
+                            <span class="workspace-activity-note-icon"><x-icon name="file-description" /></span>
+                            <span class="workspace-activity-copy"><strong>{{ $note->display_title }}</strong><span>Updated {{ $note->updated_at->diffForHumans() }}</span></span>
+                            <x-icon name="chevron-right" />
+                        </a>
+                    @endforeach
+                </div>
+            @else
+                <div class="workspace-activity-empty">
+                    <span class="workspace-empty-icon"><x-icon name="notes" /></span>
+                    <h3>No notes yet</h3>
+                    <p>Create a note to start building your personal workspace.</p>
+                </div>
+            @endif
+            <p class="workspace-activity-footer">Markdown Docs and Secure Vault are not connected yet.</p>
+        </section>
+
+        <section class="workspace-panel workspace-quick-actions" aria-labelledby="quick-actions-heading">
+            <header class="workspace-panel-heading">
+                <div>
+                    <h2 id="quick-actions-heading">Quick actions</h2>
+                    <p>Start with your active workspace tools</p>
+                </div>
+            </header>
+            <div class="workspace-quick-links">
+                <form method="POST" action="{{ route('notes.store') }}">
+                    @csrf
+                    <button type="submit" class="workspace-quick-link workspace-quick-link-button" data-module="notes">
+                        <span class="workspace-quick-icon"><x-icon name="plus" /></span>
+                        <span class="workspace-quick-copy"><strong>New note</strong><span>Create a saved rich-text note</span></span>
+                        <x-icon name="chevron-right" class="workspace-quick-arrow" />
+                    </button>
+                </form>
+                @foreach (collect($modules)->where('id', '!=', 'notes') as $module)
+                    <a href="{{ $module['url'] }}" class="workspace-quick-link" data-module="{{ $module['id'] }}">
+                        <span class="workspace-quick-icon"><x-icon :name="$module['icon']" /></span>
+                        <span class="workspace-quick-copy"><strong>Open {{ $module['label'] }}</strong><span>Section preview · {{ $module['phase'] }}</span></span>
+                        <x-icon name="chevron-right" class="workspace-quick-arrow" />
+                    </a>
+                @endforeach
+            </div>
+        </section>
+    </div>
 @endsection

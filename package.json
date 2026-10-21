@@ -17,6 +17,8 @@
     },
     "dependencies": {
         "@tabler/icons-webfont": "^3.49.0",
+        "@tiptap/core": "^3.32.0",
+        "@tiptap/starter-kit": "^3.32.0",
         "alpinejs": "^3.17.4"
     }
 }

@@ -58,7 +58,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('notes');
+        // The pivot references notes, so it must be removed first on MySQL.
         Schema::dropIfExists('note_tags');
+        Schema::dropIfExists('notes');
     }
 };

@@ -1,0 +1,71 @@
+/* Authentication only: preserve the existing application-shell typography. */
+@font-face {
+    font-family: 'Montserrat';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('../fonts/montserrat-variable.woff') format('woff');
+}
+
+@layer components {
+    .auth-page {
+        font-family: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .auth-background {
+        background-color: #0d0e12;
+        background-image:
+            radial-gradient(ellipse at 76% 10%, rgb(16 185 129 / 0.045), transparent 58%),
+            linear-gradient(to right, rgb(255 255 255 / 0.022) 1px, transparent 1px),
+            linear-gradient(to bottom, rgb(255 255 255 / 0.022) 1px, transparent 1px);
+        background-size: 100% 100%, 32px 32px, 32px 32px;
+    }
+
+    .auth-page .auth-card {
+        border-radius: 14px;
+        box-shadow: 0 20px 60px -35px rgb(0 0 0 / 0.6);
+    }
+
+    .auth-page .auth-card::before {
+        height: 1px;
+    }
+
+    .auth-input {
+        @apply block h-11 w-full min-w-0 rounded-lg border border-line-strong bg-canvas px-3 text-base text-ink transition-colors sm:h-10 sm:text-xs;
+        @apply placeholder:text-muted/85 focus:outline-none;
+        @apply aria-invalid:border-rose-400/70;
+        /* Essential control boundaries exceed 3:1 against the dark surfaces. */
+        border-color: #5d6775;
+    }
+
+    .auth-page .check:not(:checked) {
+        border-color: #5d6775;
+    }
+
+    .auth-page input:focus,
+    .auth-page textarea:focus,
+    .auth-page select:focus {
+        border-color: #5d6775;
+        box-shadow: none;
+        outline: none;
+    }
+
+    .auth-link {
+        @apply rounded-sm font-semibold text-brand-400 underline-offset-4 transition-colors hover:text-brand-300 hover:underline;
+    }
+
+    .auth-submit {
+        @apply font-semibold;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .auth-page *,
+    .auth-page *::before,
+    .auth-page *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
