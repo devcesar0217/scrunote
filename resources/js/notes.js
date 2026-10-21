@@ -16,9 +16,10 @@ function isSafeLink(value) {
     }
 }
 
-function notesWorkspace({ selected }) {
+function notesWorkspace({ selected, projectId = null }) {
     return {
         selected,
+        projectId,
         hasJavaScript: true,
         listOpen: true,
 

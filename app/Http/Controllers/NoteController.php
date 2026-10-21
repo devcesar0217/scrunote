@@ -10,7 +10,6 @@ use App\Models\User;
 use App\Support\NoteTagSynchronizer;
 use App\Support\RichTextSanitizer;
 use App\Support\WorkspaceLayoutData;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -146,37 +145,16 @@ class NoteController extends Controller
         $user = $request->user();
         $projectFilter = $this->projectFilter($request, $user);
         $projects = Project::query()->ownedBy($user)->orderBy('title')->get(['id', 'title']);
-        $notes = $this->notesFor($user, $query, $projectFilter)->simplePaginate(50)->withQueryString();
         $safeHtml = $selected === null ? null : $this->sanitizer->sanitize($selected->html())['html'];
 
         return view('pages.notes.index', [
             ...$this->layout->for($request, 'notes.index'),
-            'notes' => $notes,
             'selectedNote' => $selected,
             'selectedHtml' => $safeHtml,
             'search' => $query,
             'projects' => $projects,
             'projectFilter' => $projectFilter,
         ]);
-    }
-
-    /** @return Builder<Note> */
-    private function notesFor(User $user, string $search, int|string|null $projectFilter): Builder
-    {
-        return Note::query()->ownedBy($user)->active()->with('tags:id,name')
-            ->when($projectFilter === 'mine', fn (Builder $query) => $query->whereNull('project_id'))
-            ->when(is_int($projectFilter), fn (Builder $query) => $query->where('project_id', $projectFilter))
-            ->when($search !== '', function (Builder $query) use ($search, $user): void {
-                $needle = '%'.$search.'%';
-                $query->where(function (Builder $query) use ($needle, $user): void {
-                    $query->whereLike('title', $needle)
-                        ->orWhereLike('content_text', $needle)
-                        ->orWhereHas('tags', fn (Builder $tags) => $tags->where('user_id', $user->id)
-                            ->where('module', 'notes')->whereLike('name', $needle));
-                });
-            })
-            ->orderByDesc('is_pinned')
-            ->latest('updated_at');
     }
 
     private function projectFilter(Request $request, User $user): int|string|null

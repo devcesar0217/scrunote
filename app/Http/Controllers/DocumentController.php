@@ -10,7 +10,6 @@ use App\Models\User;
 use App\Support\DocumentTagSynchronizer;
 use App\Support\MarkdownTextExtractor;
 use App\Support\WorkspaceLayoutData;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -160,35 +159,14 @@ class DocumentController extends Controller
         $user = $request->user();
         $projectFilter = $this->projectFilter($request, $user);
         $projects = Project::query()->ownedBy($user)->orderBy('title')->get(['id', 'title']);
-        $documents = $this->documentsFor($user, $query, $projectFilter)->simplePaginate(50)->withQueryString();
 
         return view('pages.markdown.index', [
             ...$this->layout->for($request, 'markdown.index'),
-            'documents' => $documents,
             'selectedDocument' => $selected,
             'search' => $query,
             'projects' => $projects,
             'projectFilter' => $projectFilter,
         ]);
-    }
-
-    /** @return Builder<Document> */
-    private function documentsFor(User $user, string $search, int|string|null $projectFilter): Builder
-    {
-        return Document::query()->ownedBy($user)->active()->with('tags:id,name')
-            ->when($projectFilter === 'mine', fn (Builder $query) => $query->whereNull('project_id'))
-            ->when(is_int($projectFilter), fn (Builder $query) => $query->where('project_id', $projectFilter))
-            ->when($search !== '', function (Builder $query) use ($search, $user): void {
-                $needle = '%'.$search.'%';
-                $query->where(function (Builder $query) use ($needle, $user): void {
-                    $query->whereLike('title', $needle)
-                        ->orWhereLike('content_text', $needle)
-                        ->orWhereHas('tags', fn (Builder $tags) => $tags->where('user_id', $user->id)
-                            ->where('module', 'markdown')->whereLike('name', $needle));
-                });
-            })
-            ->orderByDesc('is_pinned')
-            ->latest('updated_at');
     }
 
     private function projectFilter(Request $request, User $user): int|string|null

@@ -71,9 +71,10 @@ const scrunoteEditorTheme = EditorView.theme({
     '.cm-foldPlaceholder': { border: '0', backgroundColor: 'var(--sn-raised)', color: 'var(--sn-muted)' },
 }, { dark: true });
 
-function markdownWorkspace({ selected }) {
+function markdownWorkspace({ selected, projectId = null }) {
     return {
         selected,
+        projectId,
         listOpen: true,
 
         init() {

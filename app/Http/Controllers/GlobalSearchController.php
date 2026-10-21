@@ -25,21 +25,20 @@ class GlobalSearchController extends Controller
 
         /** @var User $user */
         $user = $request->user();
-        $search = $this->search->search($user, $query);
-        $payload = [
-            'query' => $query,
-            'minimum_query_length' => GlobalSearch::MINIMUM_QUERY_LENGTH,
-            'results' => $search['results'],
-            'has_more' => $search['has_more'],
-        ];
-
         if ($request->expectsJson()) {
-            return response()->json($payload, 200, ['Cache-Control' => 'no-store, private']);
+            $search = $this->search->search($user, $query);
+
+            return response()->json([
+                'query' => $query,
+                'minimum_query_length' => GlobalSearch::MINIMUM_QUERY_LENGTH,
+                'results' => $search['results'],
+                'has_more' => $search['has_more'],
+            ], 200, ['Cache-Control' => 'no-store, private']);
         }
 
         return view('pages.search.index', [
             ...$this->layout->for($request, 'search.index'),
-            ...$payload,
+            'query' => $query,
         ]);
     }
 }

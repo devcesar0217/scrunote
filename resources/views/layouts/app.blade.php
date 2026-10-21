@@ -25,8 +25,6 @@
 
     <div class="workspace-shell" x-data="workspaceShell({
         navigation: {{ Illuminate\Support\Js::from($navigation) }},
-        searchUrl: {{ Illuminate\Support\Js::from(route('search.index')) }},
-        initialSearchQuery: {{ Illuminate\Support\Js::from($page['id'] === 'search' ? ($query ?? '') : '') }},
     })"
         @keydown.window="handleShortcut($event)" @resize.window.debounce.120ms="handleResize()"
         @pageshow.window="restorePageState()">

@@ -20,16 +20,29 @@ async function copyToClipboard(value) {
     if (!copied) throw new Error('Clipboard access was not available.');
 }
 
-function vaultWorkspace({ unlocked, idleMilliseconds, lockUrl, heartbeatUrl, csrfToken }) {
+function vaultWorkspace({ unlocked, idleMilliseconds, lockUrl, heartbeatUrl, csrfToken, projectId = null, newEntryUrl }) {
     return {
         unlocked,
         idleMilliseconds,
         lockUrl,
         heartbeatUrl,
         csrfToken,
+        projectId,
+        newEntryUrl,
         lockTimer: null,
         lastHeartbeatAt: 0,
         activityHandler: null,
+
+        get newEntryUrlForProject() {
+            const url = new URL(this.newEntryUrl, window.location.origin);
+            if (Number.isInteger(this.projectId) || (typeof this.projectId === 'string' && /^\d+$/.test(this.projectId))) {
+                url.searchParams.set('project', this.projectId);
+            } else {
+                url.searchParams.delete('project');
+            }
+
+            return `${url.pathname}${url.search}${url.hash}`;
+        },
 
         init() {
             if (!this.unlocked) return;

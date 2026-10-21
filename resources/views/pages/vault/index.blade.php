@@ -8,7 +8,9 @@
         lockUrl: {{ Illuminate\Support\Js::from(route('vault.lock')) }},
         heartbeatUrl: {{ Illuminate\Support\Js::from(route('vault.heartbeat')) }},
         csrfToken: {{ Illuminate\Support\Js::from(csrf_token()) }},
-    })">
+        projectId: {{ Illuminate\Support\Js::from(is_int($projectFilter) ? $projectFilter : null) }},
+        newEntryUrl: {{ Illuminate\Support\Js::from(route('vault.index', ['new' => 1])) }},
+    })" @workspace-project-filter-updated.window="if ($event.detail.module === 'vault') projectId = $event.detail.projectId">
         <header class="vault-page-header">
             <div>
                 <h1>Secure Vault</h1>
@@ -20,7 +22,7 @@
                         @csrf
                         <button type="submit" class="vault-subtle-button"><x-icon name="lock" /> Lock Vault</button>
                     </form>
-                    <a href="{{ route('vault.index', array_filter(['new' => 1, 'project' => is_int($projectFilter) ? $projectFilter : null])) }}" class="vault-primary-button"><x-icon name="plus" /> New entry</a>
+                    <a href="{{ route('vault.index', array_filter(['new' => 1, 'project' => is_int($projectFilter) ? $projectFilter : null])) }}" :href="newEntryUrlForProject" class="vault-primary-button"><x-icon name="plus" /> New entry</a>
                 @endif
             </div>
         </header>
@@ -31,35 +33,7 @@
 
         <div class="vault-layout">
             <aside class="vault-list-panel" aria-label="Your Vault entries">
-                <form class="vault-search" method="GET" action="{{ route('vault.index') }}">
-                    <label for="vault-search-query">Search Vault</label>
-                    <div class="vault-search-input"><x-icon name="search" /><input id="vault-search-query" type="search" name="q" value="{{ $search }}" maxlength="120" placeholder="Name, URL, username, tag" autocomplete="off"></div>
-                    <label class="vault-project-filter" for="vault-project-filter"><x-icon name="folder" /><span>Location</span>
-                        <select id="vault-project-filter" name="project" onchange="this.form.submit()">
-                            <option value="" @selected($projectFilter === null)>All workspace</option>
-                            <option value="mine" @selected($projectFilter === 'mine')>My Workspace</option>
-                            @foreach ($projects as $project)<option value="{{ $project->id }}" @selected($projectFilter === $project->id)>{{ $project->title }}</option>@endforeach
-                        </select>
-                    </label>
-                </form>
-
-                @if ($vault)
-                    <div class="vault-list-summary"><span>{{ $entries->count() }} {{ Str::plural('entry', $entries->count()) }}{{ $search !== '' ? ' found' : '' }}</span>@if ($search !== '')<a href="{{ route('vault.index', array_filter(['project' => $projectFilter])) }}">Clear</a>@endif</div>
-                    <div class="vault-list" aria-live="polite">
-                        @forelse ($entries as $entry)
-                            <a href="{{ route('vault.show', array_filter(['vaultEntry' => $entry, 'project' => $projectFilter])) }}" class="vault-list-item {{ $selectedEntry?->is($entry) ? 'is-selected' : '' }}" @if ($selectedEntry?->is($entry)) aria-current="page" @endif>
-                                <span class="vault-list-title">{{ $entry->title }} @if ($entry->is_pinned)<x-icon name="pin-filled" aria-label="Pinned" />@endif</span>
-                                @if ($entry->username)<span class="vault-list-user">{{ $entry->username }}</span>@endif
-                                @if ($entry->tags->isNotEmpty())<span class="vault-list-tags">{{ $entry->tags->map(fn ($tag) => '#'.$tag->name)->implode(' ') }}</span>@endif
-                                <time datetime="{{ $entry->updated_at->toAtomString() }}">{{ $entry->updated_at->diffForHumans() }}</time>
-                            </a>
-                        @empty
-                            <div class="vault-list-empty"><x-icon name="shield-lock" /><p>{{ $search !== '' ? 'No entries match this search.' : 'No Vault entries yet.' }}</p></div>
-                        @endforelse
-                    </div>
-                @else
-                    <div class="vault-list-empty"><x-icon name="lock" /><p>Set up your Vault to begin storing encrypted credentials.</p></div>
-                @endif
+                <livewire:vault-search :selected-id="$selectedEntry?->id" :initial-search="$search" :initial-project-filter="$projectFilter" />
             </aside>
 
             <section class="vault-editor-panel" aria-label="Vault entry workspace">
@@ -100,7 +74,7 @@
                         <span class="vault-empty-icon"><x-icon name="shield-lock" /></span>
                         <h2>Choose an entry or add a new one</h2>
                         <p>Secret values are never shown in this workspace until you explicitly reveal or copy them.</p>
-                        <a href="{{ route('vault.index', array_filter(['new' => 1, 'project' => is_int($projectFilter) ? $projectFilter : null])) }}" class="vault-subtle-button"><x-icon name="plus" /> Create your first entry</a>
+                        <a href="{{ route('vault.index', array_filter(['new' => 1, 'project' => is_int($projectFilter) ? $projectFilter : null])) }}" :href="newEntryUrlForProject" class="vault-subtle-button"><x-icon name="plus" /> Create your first entry</a>
                     </section>
                 @endif
             </section>

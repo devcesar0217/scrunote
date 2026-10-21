@@ -1,16 +1,7 @@
 // Alpine owns local shell state. Livewire supplies Alpine; do not start another copy.
-function workspaceShell({ navigation, searchUrl, initialSearchQuery = '' }) {
+function workspaceShell({ navigation }) {
     return {
         navigation,
-        searchUrl,
-        initialSearchQuery,
-        searchQuery: '',
-        searchResults: [],
-        searchHasMore: false,
-        searchState: 'idle',
-        searchTimer: null,
-        searchAbortController: null,
-        searchRequestId: 0,
         navigationOpen: false,
         paletteOpen: false,
         accountExpanded: false,
@@ -32,8 +23,6 @@ function workspaceShell({ navigation, searchUrl, initialSearchQuery = '' }) {
         },
 
         destroy() {
-            clearTimeout(this.searchTimer);
-            this.searchAbortController?.abort();
             window.removeEventListener('pagehide', this.pageHideHandler);
             window.removeEventListener('scrunote-theme-change', this.themeChangedHandler);
             document.documentElement.classList.remove('workspace-modal-open');
@@ -61,29 +50,6 @@ function workspaceShell({ navigation, searchUrl, initialSearchQuery = '' }) {
             } catch (_) {
                 // The live preference still works when storage is unavailable.
             }
-        },
-
-        get normalizedSearchQuery() {
-            return this.searchQuery.trim();
-        },
-
-        get searchContext() {
-            if (this.searchState === 'loading') return 'Searching your workspace…';
-            if (this.normalizedSearchQuery.length < 2) return 'Global Search';
-            return this.searchHasMore ? 'Refine your search for more matches' : 'Private workspace results';
-        },
-
-        get searchCount() {
-            if (this.searchState === 'loading') return 'Searching…';
-            if (this.normalizedSearchQuery.length === 0) return 'Notes · Markdown · Vault';
-            if (this.normalizedSearchQuery.length < 2) return 'Type at least 2 characters';
-            return `${this.searchResults.length} ${this.searchResults.length === 1 ? 'result' : 'results'}`;
-        },
-
-        get searchMessage() {
-            if (this.searchState === 'loading' || this.normalizedSearchQuery.length === 0 || this.normalizedSearchQuery.length < 2) return '';
-            if (this.searchState === 'error') return 'Search could not be completed. Please try again.';
-            return this.searchResults.length === 0 ? 'No private workspace items match this search.' : '';
         },
 
         syncScrollLock() {
@@ -116,24 +82,32 @@ function workspaceShell({ navigation, searchUrl, initialSearchQuery = '' }) {
             });
         },
 
+        paletteDialog() {
+            // Keep the native dialog outside the Livewire component boundary.
+            // Alpine refs do not cross that boundary reliably after a Livewire morph.
+            return this.$refs.palette || document.getElementById('workspace-palette');
+        },
+
         openPalette(trigger) {
+            const dialog = this.paletteDialog();
+            if (!dialog) return;
+
             this.closeNavigation(false);
             this.closeAccount(false);
             this.paletteReturn = trigger || document.activeElement;
             this.returnPaletteFocus = true;
             this.resetSearch();
             this.paletteOpen = true;
-            if (!this.$refs.palette.open) this.$refs.palette.showModal();
+            if (!dialog.open) dialog.showModal();
             this.syncScrollLock();
-            this.$nextTick(() => this.$refs.paletteInput.focus({ preventScroll: true }));
+            this.$nextTick(() => document.getElementById('workspace-search-query')?.focus({ preventScroll: true }));
         },
 
         closePalette(restoreFocus = true) {
             this.returnPaletteFocus = restoreFocus;
-            clearTimeout(this.searchTimer);
-            this.searchAbortController?.abort();
             this.paletteOpen = false;
-            if (this.$refs.palette.open) this.$refs.palette.close();
+            const dialog = this.paletteDialog();
+            if (dialog?.open) dialog.close();
             this.syncScrollLock();
         },
 
@@ -149,56 +123,9 @@ function workspaceShell({ navigation, searchUrl, initialSearchQuery = '' }) {
         },
 
         resetSearch() {
-            clearTimeout(this.searchTimer);
-            this.searchAbortController?.abort();
-            this.searchRequestId += 1;
-            this.searchQuery = '';
-            this.searchResults = [];
-            this.searchHasMore = false;
-            this.searchState = 'idle';
-        },
-
-        queueSearch() {
-            clearTimeout(this.searchTimer);
-            this.searchAbortController?.abort();
-            this.searchResults = [];
-            this.searchHasMore = false;
-            this.searchState = 'idle';
-            if (this.normalizedSearchQuery.length < 2) return;
-
-            this.searchTimer = setTimeout(() => this.search(), 220);
-        },
-
-        async search() {
-            const query = this.normalizedSearchQuery;
-            if (query.length < 2) return;
-
-            const requestId = ++this.searchRequestId;
-            this.searchAbortController?.abort();
-            this.searchAbortController = new AbortController();
-            this.searchState = 'loading';
-
-            const url = new URL(this.searchUrl, window.location.origin);
-            url.searchParams.set('q', query);
-            try {
-                const response = await fetch(url, {
-                    credentials: 'same-origin',
-                    signal: this.searchAbortController.signal,
-                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                });
-                const payload = await response.json().catch(() => ({}));
-                if (!response.ok || !Array.isArray(payload.results)) throw new Error('Search response was invalid.');
-                if (requestId !== this.searchRequestId) return;
-
-                this.searchResults = payload.results;
-                this.searchHasMore = payload.has_more === true;
-                this.searchState = 'ready';
-            } catch (error) {
-                if (error.name === 'AbortError' || requestId !== this.searchRequestId) return;
-                this.searchResults = [];
-                this.searchHasMore = false;
-                this.searchState = 'error';
-            }
+            // The palette itself is a Livewire component. Alpine owns only the
+            // dialog/focus state and asks Livewire to reset its server state.
+            window.Livewire?.dispatch('reset-global-search');
         },
 
         closeAccount(restoreFocus = true) {
@@ -210,8 +137,8 @@ function workspaceShell({ navigation, searchUrl, initialSearchQuery = '' }) {
         },
 
         dismissBackdrop(event, name) {
-            const dialog = this.$refs[name];
-            if (event.target !== dialog) return;
+            const dialog = this.$refs[name] || document.getElementById(`workspace-${name}`);
+            if (!dialog || event.target !== dialog) return;
             const box = dialog.getBoundingClientRect();
             if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) {
                 if (name === 'navigation') this.closeNavigation();
@@ -222,8 +149,8 @@ function workspaceShell({ navigation, searchUrl, initialSearchQuery = '' }) {
         // Keep Tab cycling inside the modal even when the browser would hand
         // sequential focus to its chrome between the last and first controls.
         cycleDialogFocus(event, name) {
-            const dialog = this.$refs[name];
-            if (!dialog.open) return;
+            const dialog = this.$refs[name] || document.getElementById(`workspace-${name}`);
+            if (!dialog?.open) return;
             const controls = [...dialog.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
                 .filter(element => element.getClientRects().length && getComputedStyle(element).visibility !== 'hidden');
             event.preventDefault();
@@ -235,16 +162,18 @@ function workspaceShell({ navigation, searchUrl, initialSearchQuery = '' }) {
             controls[next].focus();
         },
 
-        moveResult(direction) {
-            const links = [...this.$refs.paletteResults.querySelectorAll('a')];
+        movePaletteResult(direction) {
+            const results = this.paletteDialog()?.querySelector('.workspace-palette-results');
+            const links = [...(results?.querySelectorAll('a') || [])];
             if (!links.length) return;
             const current = links.indexOf(document.activeElement);
             const next = current === -1 ? (direction > 0 ? 0 : links.length - 1) : (current + direction + links.length) % links.length;
             links[next].focus();
         },
 
-        visitFirstResult() {
-            if (this.searchResults.length) window.location.assign(this.searchResults[0].url);
+        visitFirstPaletteResult() {
+            const first = this.paletteDialog()?.querySelector('.workspace-palette-results a[href]');
+            if (first) window.location.assign(first.href);
         },
 
         handleShortcut(event) {

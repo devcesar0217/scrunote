@@ -112,3 +112,8 @@
 .workspace-quick-link-button { width: 100%; text-align: left; font: inherit; color: inherit; }
 @media (min-width: 1600px) { .workspace-activity-item { gap: 12px; padding: 11px; }.workspace-activity-note-icon { width: 33px; height: 33px; }.workspace-activity-copy strong { font-size: 11px; }.workspace-activity-copy span { font-size: 9px; } }
 @media (max-width: 639.98px) { .workspace-activity-list { margin-top: 10px; }.workspace-activity-copy strong { font-size: 11px; }.workspace-activity-copy span { font-size: 9px; } }
+/* Livewire list filtering keeps the Notes editor isolated from list refreshes. */
+.notes-live-search { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+.notes-list-summary button, .notes-list-empty button { padding: 0; border: 0; background: transparent; color: #22c4e0; font: inherit; cursor: pointer; }
+.notes-list.is-loading { opacity: .58; }
+.notes-search-progress { margin-left: auto; color: var(--sn-muted-2); font-size: 7px; }

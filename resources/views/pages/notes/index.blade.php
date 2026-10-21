@@ -2,8 +2,11 @@
 @section('title', ($selectedNote ? $selectedNote->display_title.' · ' : '').'Notes · Scrunote')
 
 @section('content')
-    <section class="notes-workspace" x-data="notesWorkspace({ selected: {{ Illuminate\Support\Js::from($selectedNote?->id) }} })"
-        @keydown.window="handleShortcut($event)" @notes-created.window="openList()">
+    <section class="notes-workspace" x-data="notesWorkspace({
+        selected: {{ Illuminate\Support\Js::from($selectedNote?->id) }},
+        projectId: {{ Illuminate\Support\Js::from(is_int($projectFilter) ? $projectFilter : null) }},
+    })" @keydown.window="handleShortcut($event)" @notes-created.window="openList()"
+        @workspace-project-filter-updated.window="if ($event.detail.module === 'notes') projectId = $event.detail.projectId">
         <header class="notes-page-header">
             <div>
                 <h1>Notes</h1>
@@ -16,7 +19,7 @@
                 </button>
                 <form method="POST" action="{{ route('notes.store') }}">
                     @csrf
-                    @if (is_int($projectFilter))<input type="hidden" name="project_id" value="{{ $projectFilter }}">@endif
+                    <input type="hidden" name="project_id" value="{{ is_int($projectFilter) ? $projectFilter : '' }}" :value="projectId ?? ''" :disabled="projectId === null">
                     <button type="submit" class="notes-primary-button"><x-icon name="plus" /> New note</button>
                 </form>
             </div>
@@ -28,51 +31,7 @@
 
         <div class="notes-layout" :class="{ 'notes-list-is-hidden': !listOpen }">
             <aside id="notes-list-panel" class="notes-list-panel" aria-label="Your notes" :aria-hidden="!listOpen" :inert="!listOpen">
-                <form class="notes-search" method="GET" action="{{ route('notes.index') }}">
-                    <label for="notes-search-query">Search notes</label>
-                    <div class="notes-search-input">
-                        <x-icon name="search" />
-                        <input id="notes-search-query" type="search" name="q" value="{{ $search }}" maxlength="120"
-                            placeholder="Title, content, or tag" autocomplete="off">
-                    </div>
-                    <label class="notes-project-filter" for="notes-project-filter"><x-icon name="folder" /><span>Location</span>
-                        <select id="notes-project-filter" name="project" onchange="this.form.submit()">
-                            <option value="" @selected($projectFilter === null)>All workspace</option>
-                            <option value="mine" @selected($projectFilter === 'mine')>My Workspace</option>
-                            @foreach ($projects as $project)<option value="{{ $project->id }}" @selected($projectFilter === $project->id)>{{ $project->title }}</option>@endforeach
-                        </select>
-                    </label>
-                </form>
-
-                <div class="notes-list-summary">
-                    <span>{{ $notes->count() }} {{ Str::plural('note', $notes->count()) }}{{ $search !== '' ? ' found' : '' }}</span>
-                    @if ($search !== '')<a href="{{ route('notes.index', array_filter(['project' => $projectFilter])) }}">Clear</a>@endif
-                </div>
-
-                <div class="notes-list" aria-live="polite">
-                    @forelse ($notes as $note)
-                        <a href="{{ route('notes.show', array_filter(['note' => $note, 'project' => $projectFilter])) }}" class="notes-list-item {{ $selectedNote?->is($note) ? 'is-selected' : '' }}" data-note-id="{{ $note->id }}"
-                            @click="closeListForSelection()" @if ($selectedNote?->is($note)) aria-current="page" @endif>
-                            <span class="notes-list-title"><span data-note-list-title>{{ $note->display_title }}</span>@if ($note->is_pinned)<x-icon name="pin-filled" aria-label="Pinned" />@endif</span>
-                            <span class="notes-list-tags" data-note-list-tags @if ($note->tags->isEmpty()) hidden @endif>{{ $note->tags->map(fn ($tag) => '#'.$tag->name)->implode(' ') }}</span>
-                            <span class="notes-list-preview" data-note-list-preview>{{ filled($note->content_text) ? Str::limit($note->content_text, 58) : 'Empty note' }}</span>
-                            <time data-note-list-updated datetime="{{ $note->updated_at->toAtomString() }}">{{ $note->updated_at->diffForHumans() }}</time>
-                        </a>
-                    @empty
-                        <div class="notes-list-empty">
-                            <x-icon name="notes" />
-                            <p>{{ $search !== '' ? 'No notes match this search.' : 'No notes yet.' }}</p>
-                            @if ($search !== '')<a href="{{ route('notes.index', array_filter(['project' => $projectFilter])) }}">Clear search</a>@endif
-                        </div>
-                    @endforelse
-                </div>
-
-                @if ($notes->previousPageUrl() || $notes->nextPageUrl())
-                    <nav class="notes-pagination" aria-label="Notes pages">
-                        @if ($notes->previousPageUrl())<a href="{{ $notes->previousPageUrl() }}">Previous</a>@else<span>Previous</span>@endif
-                        @if ($notes->nextPageUrl())<a href="{{ $notes->nextPageUrl() }}">Next</a>@else<span>Next</span>@endif
-                    </nav>
-                @endif
+                <livewire:notes-search :selected-id="$selectedNote?->id" :initial-search="$search" :initial-project-filter="$projectFilter" />
             </aside>
 
             <section class="notes-editor-panel" aria-label="Note editor">
@@ -85,7 +44,7 @@
                         <p>Create a private rich-text note, then search it by title, text or tags.</p>
                         <form method="POST" action="{{ route('notes.store') }}">
                             @csrf
-                            @if (is_int($projectFilter))<input type="hidden" name="project_id" value="{{ $projectFilter }}">@endif
+                            <input type="hidden" name="project_id" value="{{ is_int($projectFilter) ? $projectFilter : '' }}" :value="projectId ?? ''" :disabled="projectId === null">
                             <button type="submit" class="workspace-secondary-button"><x-icon name="plus" /> Create your first note</button>
                         </form>
                     </div>
