@@ -22,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->dontFlash([
             'master_password',
             'master_password_confirmation',
+            'backup_password',
+            'backup_password_confirmation',
             'secret',
             'notes',
         ]);

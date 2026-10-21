@@ -4,6 +4,7 @@ namespace App\Http\Requests\Notes;
 
 use App\Models\Note;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateNoteRequest extends FormRequest
 {
@@ -34,6 +35,7 @@ class UpdateNoteRequest extends FormRequest
             'title' => ['nullable', 'string', 'max:160', 'not_regex:/\x00/'],
             'content_html' => ['required', 'string', 'max:250000', 'not_regex:/\x00/'],
             'tags' => ['nullable', 'string', 'max:650', 'not_regex:/\x00/'],
+            'project_id' => ['nullable', 'integer', Rule::exists('projects', 'id')->where('user_id', $this->user()?->id)],
             'version' => ['required', 'integer', 'min:0'],
             'content_plain' => ['nullable', 'boolean'],
         ];

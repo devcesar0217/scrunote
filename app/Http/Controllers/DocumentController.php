@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Documents\ToggleDocumentPinRequest;
 use App\Http\Requests\Documents\UpdateDocumentRequest;
 use App\Models\Document;
+use App\Models\Project;
 use App\Models\User;
 use App\Support\DocumentTagSynchronizer;
 use App\Support\MarkdownTextExtractor;
@@ -17,6 +18,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class DocumentController extends Controller
@@ -43,13 +45,15 @@ class DocumentController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
+        $projectId = $this->validatedProjectId($request, $user);
         $document = $user->documents()->create([
             'title' => null,
             'markdown' => '',
             'content_text' => '',
+            'project_id' => $projectId,
         ]);
 
-        return to_route('markdown.show', $document)->with('status', 'New document created.');
+        return to_route('markdown.show', array_filter(['document' => $document, 'project' => $projectId]))->with('status', 'New document created.');
     }
 
     public function update(UpdateDocumentRequest $request, Document $document): JsonResponse|RedirectResponse
@@ -62,12 +66,14 @@ class DocumentController extends Controller
         $contentText = $this->extractor->extract($markdown);
         $tagNames = $this->tags->parse($validated['tags'] ?? null);
         $expectedVersion = (int) $validated['version'];
+        $projectId = array_key_exists('project_id', $validated) ? $validated['project_id'] : $document->project_id;
 
-        $updated = DB::transaction(function () use ($document, $user, $validated, $markdown, $contentText, $tagNames, $expectedVersion): bool {
+        $updated = DB::transaction(function () use ($document, $user, $validated, $markdown, $contentText, $tagNames, $expectedVersion, $projectId): bool {
             $changed = Document::query()->ownedBy($user)->whereKey($document->id)->where('lock_version', $expectedVersion)->update([
                 'title' => $validated['title'],
                 'markdown' => $markdown,
                 'content_text' => $contentText,
+                'project_id' => $projectId,
                 'lock_version' => $expectedVersion + 1,
                 'updated_at' => now(),
             ]);
@@ -85,7 +91,7 @@ class DocumentController extends Controller
             return $this->conflict($request);
         }
 
-        $fresh = $document->fresh(['tags:id,name']);
+        $fresh = $document->fresh(['tags:id,name', 'project:id,title']);
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -97,6 +103,7 @@ class DocumentController extends Controller
                     'updated_at' => $fresh->updated_at?->toAtomString(),
                     'preview' => filled($fresh->content_text) ? Str::limit($fresh->content_text, 58) : 'Empty document',
                     'tags' => $fresh->tags->pluck('name')->values(),
+                    'project' => $fresh->project === null ? null : ['id' => $fresh->project->id, 'title' => $fresh->project->title],
                 ],
             ]);
         }
@@ -151,20 +158,26 @@ class DocumentController extends Controller
         abort_if(mb_strlen($query) > 120, 422, 'Search may not be longer than 120 characters.');
         /** @var User $user */
         $user = $request->user();
-        $documents = $this->documentsFor($user, $query)->simplePaginate(50)->withQueryString();
+        $projectFilter = $this->projectFilter($request, $user);
+        $projects = Project::query()->ownedBy($user)->orderBy('title')->get(['id', 'title']);
+        $documents = $this->documentsFor($user, $query, $projectFilter)->simplePaginate(50)->withQueryString();
 
         return view('pages.markdown.index', [
             ...$this->layout->for($request, 'markdown.index'),
             'documents' => $documents,
             'selectedDocument' => $selected,
             'search' => $query,
+            'projects' => $projects,
+            'projectFilter' => $projectFilter,
         ]);
     }
 
     /** @return Builder<Document> */
-    private function documentsFor(User $user, string $search): Builder
+    private function documentsFor(User $user, string $search, int|string|null $projectFilter): Builder
     {
         return Document::query()->ownedBy($user)->active()->with('tags:id,name')
+            ->when($projectFilter === 'mine', fn (Builder $query) => $query->whereNull('project_id'))
+            ->when(is_int($projectFilter), fn (Builder $query) => $query->where('project_id', $projectFilter))
             ->when($search !== '', function (Builder $query) use ($search, $user): void {
                 $needle = '%'.$search.'%';
                 $query->where(function (Builder $query) use ($needle, $user): void {
@@ -176,6 +189,31 @@ class DocumentController extends Controller
             })
             ->orderByDesc('is_pinned')
             ->latest('updated_at');
+    }
+
+    private function projectFilter(Request $request, User $user): int|string|null
+    {
+        $filter = $request->query('project');
+        if ($filter === null || $filter === '') {
+            return null;
+        }
+        if ($filter === 'mine') {
+            return 'mine';
+        }
+        abort_unless(is_string($filter) && ctype_digit($filter), 404);
+        $project = Project::query()->ownedBy($user)->find($filter);
+        abort_if($project === null, 404);
+
+        return $project->id;
+    }
+
+    private function validatedProjectId(Request $request, User $user): ?int
+    {
+        $validated = $request->validate([
+            'project_id' => ['nullable', 'integer', Rule::exists('projects', 'id')->where('user_id', $user->id)],
+        ]);
+
+        return isset($validated['project_id']) ? (int) $validated['project_id'] : null;
     }
 
     private function owned(Request $request, Document $document): Document

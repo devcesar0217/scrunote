@@ -5,10 +5,13 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\NoteController;
+use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\VaultController;
 use App\Http\Controllers\VaultEntryController;
 use App\Http\Controllers\VaultSecretController;
 use App\Http\Controllers\VaultSessionController;
+use App\Http\Controllers\WorkspaceBackupController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\EnsureVaultIsUnlocked;
@@ -27,6 +30,12 @@ Route::middleware(PrivateResponseHeaders::class)->group(function (): void {
     Route::middleware(['auth', EnsureUserIsActive::class, 'auth.session'])->group(function (): void {
         Route::get('/', WorkspaceController::class)->name('dashboard');
         Route::get('/search', GlobalSearchController::class)->name('search.index');
+
+        Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
+        Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');
+        Route::get('/projects/{project}', [ProjectController::class, 'show'])->name('projects.show');
+        Route::patch('/projects/{project}', [ProjectController::class, 'update'])->name('projects.update');
+        Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
 
         Route::get('/notes', [NoteController::class, 'index'])->name('notes.index');
         Route::post('/notes', [NoteController::class, 'store'])->name('notes.store');
@@ -58,7 +67,9 @@ Route::middleware(PrivateResponseHeaders::class)->group(function (): void {
             Route::post('/vault/entries/{vaultEntry}/secret', [VaultSecretController::class, 'reveal'])->name('vault.entries.secret');
         });
 
-        Route::get('/settings', WorkspaceController::class)->name('settings.index');
+        Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+        Route::post('/settings/backup', [WorkspaceBackupController::class, 'create'])->middleware('throttle:workspace-backup')->name('settings.backup.create');
+        Route::post('/settings/restore', [WorkspaceBackupController::class, 'restore'])->middleware('throttle:workspace-backup')->name('settings.backup.restore');
     });
 
     Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');

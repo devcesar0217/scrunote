@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-#[Fillable(['type', 'title', 'url', 'username', 'secret_kind', 'metadata', 'is_pinned'])]
+#[Fillable(['type', 'title', 'url', 'username', 'secret_kind', 'metadata', 'project_id', 'is_pinned'])]
 class VaultEntry extends Model
 {
     public const TYPES = ['login', 'server', 'database', 'api', 'secure_note'];
@@ -32,6 +32,12 @@ class VaultEntry extends Model
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(Tag::class, 'vault_entry_tags');
+    }
+
+    /** @return BelongsTo<Project, $this> */
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
     }
 
     /** @param Builder<VaultEntry> $query @return Builder<VaultEntry> */

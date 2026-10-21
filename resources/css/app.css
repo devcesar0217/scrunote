@@ -6,6 +6,9 @@
 @import './markdown.css';
 @import './vault.css';
 @import './search.css';
+@import './settings.css';
+@import './projects.css';
+@import './theme.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';

@@ -6,7 +6,6 @@ use App\Models\Note;
 use App\Models\User;
 use App\Support\WorkspaceNavigation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -18,18 +17,12 @@ class WorkspaceShellTest extends TestCase
     {
         return [
             'overview' => ['/', 'overview', 'Overview', 'pages.dashboard'],
+            'projects' => ['/projects', 'projects', 'Projects', 'pages.projects.index'],
             'notes' => ['/notes', 'notes', 'Notes', 'pages.notes.index'],
             'markdown' => ['/markdown', 'markdown', 'Markdown Docs', 'pages.markdown.index'],
             'vault' => ['/vault', 'vault', 'Secure Vault', 'pages.vault.index'],
             'search' => ['/search', 'search', 'Global Search', 'pages.search.index'],
-            'settings' => ['/settings', 'settings', 'Settings', 'pages.section-unavailable'],
-        ];
-    }
-
-    public static function unavailableSections(): array
-    {
-        return [
-            'settings' => ['/settings', 'settings', 'Phase 8'],
+            'settings' => ['/settings', 'settings', 'Settings', 'pages.settings.index'],
         ];
     }
 
@@ -69,8 +62,8 @@ class WorkspaceShellTest extends TestCase
     public function test_navigation_matches_the_reference_and_only_has_real_relative_destinations(): void
     {
         $items = WorkspaceNavigation::items();
-        $this->assertSame(['Overview', 'Notes', 'Markdown Docs', 'Secure Vault', 'Settings'], array_column($items, 'label'));
-        $this->assertSame(['/', '/notes', '/markdown', '/vault', '/settings'], array_column($items, 'url'));
+        $this->assertSame(['Overview', 'Projects', 'Notes', 'Markdown Docs', 'Secure Vault', 'Settings'], array_column($items, 'label'));
+        $this->assertSame(['/', '/projects', '/notes', '/markdown', '/vault', '/settings'], array_column($items, 'url'));
         foreach ($items as $item) {
             $this->assertStringStartsWith('/', $item['url']);
             $this->assertStringStartsNotWith('//', $item['url']);
@@ -79,40 +72,14 @@ class WorkspaceShellTest extends TestCase
         }
     }
 
-    #[DataProvider('unavailableSections')]
-    public function test_future_modules_remain_honest_unavailable_pages_without_crud_controls(string $path, string $id, string $phase): void
-    {
-        $this->actingAs(User::factory()->create())->get($path)->assertOk()
-            ->assertSee('Not implemented yet')->assertSee($phase)
-            ->assertSee('No module records are created, searched or stored in Phase 3.')
-            ->assertSee('Back to overview')
-            ->assertDontSee('<textarea', false)->assertDontSee('type="file"', false)
-            ->assertDontSee('name="content"', false)->assertDontSee('Export Excel')
-            ->assertDontSee('Create backup');
-    }
-
-    public function test_unavailable_settings_mutation_endpoints_are_not_exposed(): void
+    public function test_settings_has_only_its_explicit_backup_mutation_endpoints(): void
     {
         $this->actingAs(User::factory()->create());
-        foreach (['/settings'] as $path) {
-            foreach (['post', 'put', 'patch', 'delete'] as $method) {
-                $this->{$method}($path, ['title' => 'Must not be saved'])->assertMethodNotAllowed();
-            }
-            $this->get($path.'/123')->assertNotFound();
-        }
-    }
-
-    public function test_unavailable_settings_page_does_not_query_module_records(): void
-    {
-        $user = User::factory()->create();
-        DB::enableQueryLog();
-        DB::flushQueryLog();
-        $this->actingAs($user)->get('/settings')->assertOk();
-        $queries = DB::getQueryLog();
-        DB::disableQueryLog();
-        foreach ($queries as $query) {
-            $this->assertDoesNotMatchRegularExpression('/\b(notes|note_tags|tags|documents|vault_entries|vaults)\b/i', $query['query']);
-        }
+        $this->post('/settings', ['title' => 'Must not be saved'])->assertMethodNotAllowed();
+        $this->put('/settings')->assertMethodNotAllowed();
+        $this->patch('/settings')->assertMethodNotAllowed();
+        $this->delete('/settings')->assertMethodNotAllowed();
+        $this->get('/settings/123')->assertNotFound();
     }
 
     public function test_overview_only_shows_the_current_users_real_notes(): void

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Document;
 use App\Models\Note;
+use App\Models\Project;
 use App\Models\Tag;
 use App\Models\User;
 use App\Models\Vault;
@@ -69,6 +70,23 @@ class GlobalSearchTest extends TestCase
 
         $this->actingAs($owner)->getJson(route('search.index', ['q' => 'release-tag']))->assertOk()
             ->assertJsonCount(3, 'results');
+    }
+
+    public function test_projects_and_project_labels_are_searchable_without_cross_account_leaks(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $project = Project::factory()->for($owner)->create(['title' => 'Aurora Launch', 'description' => 'Deployment coordination']);
+        $note = Note::factory()->for($owner)->create(['project_id' => $project->id, 'title' => 'Checklist', 'content_text' => 'No matching text here']);
+        Project::factory()->for($other)->create(['title' => 'Aurora Private', 'description' => 'Other account']);
+
+        $this->actingAs($owner)->getJson(route('search.index', ['q' => 'aurora']))->assertOk()
+            ->assertJsonCount(2, 'results')
+            ->assertJsonPath('results.0.id', 'project:'.$project->id)
+            ->assertJsonPath('results.0.url', route('projects.show', $project))
+            ->assertJsonPath('results.1.id', 'note:'.$note->id)
+            ->assertJsonPath('results.1.snippet', 'Project: Aurora Launch · No matching text here')
+            ->assertJsonPath('results.1.url', route('notes.show', ['note' => $note, 'project' => $project->id]));
     }
 
     public function test_vault_secrets_are_never_selected_queried_or_returned_by_global_search(): void

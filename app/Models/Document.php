@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-#[Fillable(['title', 'markdown', 'content_text', 'is_pinned', 'archived_at'])]
+#[Fillable(['title', 'markdown', 'content_text', 'project_id', 'is_pinned', 'archived_at'])]
 class Document extends Model
 {
     /** @use HasFactory<DocumentFactory> */
@@ -36,6 +36,12 @@ class Document extends Model
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(Tag::class, 'document_tags');
+    }
+
+    /** @return BelongsTo<Project, $this> */
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
     }
 
     /** @param Builder<Document> $query @return Builder<Document> */

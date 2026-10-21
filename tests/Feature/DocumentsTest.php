@@ -183,9 +183,9 @@ class DocumentsTest extends TestCase
     {
         $this->assertTrue(Schema::hasTable('documents'));
         $this->assertTrue(Schema::hasTable('document_tags'));
-        // Phase 6 adds two newer Vault migrations; roll all three current module
-        // migrations back to exercise Documents' pivot-first down path.
-        Artisan::call('migrate:rollback', ['--step' => 3, '--no-interaction' => true]);
+        // Projects is newer than Documents. Roll it and Documents to exercise
+        // the latter's pivot-first down path without touching the Vault parent.
+        Artisan::call('migrate:rollback', ['--step' => 2, '--no-interaction' => true]);
         $this->assertFalse(Schema::hasTable('documents'));
         $this->assertFalse(Schema::hasTable('document_tags'));
         $this->assertTrue(Schema::hasTable('tags'));

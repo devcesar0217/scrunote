@@ -6,7 +6,7 @@
         <header class="workspace-section-header">
             <div>
                 <h1 id="global-search-heading">Global Search</h1>
-                <p class="workspace-section-description">Search your Notes, Markdown Docs, tags, and Vault non-secret metadata.</p>
+                <p class="workspace-section-description">Search Projects, Notes, Markdown Docs, tags, and Vault non-secret metadata.</p>
             </div>
         </header>
 
@@ -26,7 +26,7 @@
                 <div class="workspace-section-empty">
                     <span class="workspace-section-empty-icon"><x-icon name="search" /></span>
                     <h2>Find information across your workspace</h2>
-                    <p>Search saved Notes, Markdown Docs, tags, and safe Vault metadata. Use Ctrl/⌘ K anywhere to open the quick search dialog.</p>
+                    <p>Search Projects, saved Notes, Markdown Docs, tags, and safe Vault metadata. Use Ctrl/⌘ K anywhere to open the quick search dialog.</p>
                 </div>
             </section>
         @elseif (mb_strlen($query) < $minimum_query_length)

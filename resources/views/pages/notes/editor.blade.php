@@ -29,6 +29,15 @@
         </button>
     </div>
 
+    <div class="notes-project-row">
+        <x-icon name="folder" />
+        <label for="note-project">Project</label>
+        <select id="note-project" name="project_id" x-ref="project" @change="markDirty()">
+            <option value="">My Workspace</option>
+            @foreach ($projects as $project)<option value="{{ $project->id }}" @selected((string) old('project_id', $selectedNote->project_id) === (string) $project->id)>{{ $project->title }}</option>@endforeach
+        </select>
+    </div>
+
     <div class="notes-tag-row">
         <x-icon name="tags" />
         <label class="sr-only" for="note-tags">Tags, separated by commas</label>

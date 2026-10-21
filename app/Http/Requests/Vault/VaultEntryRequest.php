@@ -37,6 +37,7 @@ abstract class VaultEntryRequest extends FormRequest
             'metadata.engine' => ['nullable', 'string', Rule::in(['mysql', 'postgresql', 'mariadb', 'sql_server', 'sqlite'])],
             'metadata.environment' => ['nullable', 'string', 'max:80'],
             'tags' => ['nullable', 'string', 'max:650'],
+            'project_id' => ['nullable', 'integer', Rule::exists('projects', 'id')->where('user_id', $this->user()?->id)],
         ];
     }
 
@@ -74,9 +75,17 @@ abstract class VaultEntryRequest extends FormRequest
             default => [],
         };
 
-        return array_filter(
+        $metadata = array_filter(
             Arr::only($this->validated('metadata', []), $allowed),
             fn (mixed $value): bool => $value !== null && $value !== '',
         );
+
+        // Browser form controls submit numeric values as strings. Persist a
+        // canonical JSON integer so Vault metadata has one stable shape.
+        if (array_key_exists('port', $metadata)) {
+            $metadata['port'] = (int) $metadata['port'];
+        }
+
+        return $metadata;
     }
 }

@@ -80,11 +80,12 @@ class VaultTest extends TestCase
             'secret_kind' => 'password',
             'secret' => $secret,
             'notes' => $notes,
-            'metadata' => ['host' => 'db.internal.test', 'port' => 3306, 'database' => 'app', 'engine' => 'mariadb'],
+            'metadata' => ['host' => 'db.internal.test', 'port' => '3306', 'database' => 'app', 'engine' => 'mariadb'],
             'tags' => 'production, database',
         ])->assertRedirect();
 
         $entry = VaultEntry::query()->with('tags')->sole();
+        $this->assertSame(3306, $entry->metadata['port']);
         $rawPayload = (string) DB::table('vault_entries')->where('id', $entry->id)->value('sensitive_payload');
         $this->assertStringNotContainsString($secret, $rawPayload);
         $this->assertStringNotContainsString($notes, $rawPayload);
@@ -234,10 +235,10 @@ class VaultTest extends TestCase
         $this->assertTrue(Schema::hasTable('vault_entries'));
         $this->assertTrue(Schema::hasTable('vault_entry_tags'));
 
-        // Documents has the later migration timestamp in this cumulative build.
-        // Roll it and the Vault-entry migration so the latter's pivot-first down
-        // method is exercised while the parent Vault table remains available.
-        Artisan::call('migrate:rollback', ['--step' => 2, '--no-interaction' => true]);
+        // Projects and Documents have later timestamps. Roll those plus the
+        // Vault-entry migration so its pivot-first down path is exercised while
+        // the parent Vault table remains available.
+        Artisan::call('migrate:rollback', ['--step' => 3, '--no-interaction' => true]);
         $this->assertTrue(Schema::hasTable('vaults'));
         $this->assertFalse(Schema::hasTable('vault_entries'));
         $this->assertFalse(Schema::hasTable('vault_entry_tags'));

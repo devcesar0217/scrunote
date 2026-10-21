@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Documents;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateDocumentRequest extends FormRequest
 {
@@ -25,6 +26,7 @@ class UpdateDocumentRequest extends FormRequest
             'title' => ['nullable', 'string', 'max:160', 'not_regex:/\x00/'],
             'markdown' => ['required', 'string', 'max:250000', 'not_regex:/\x00/'],
             'tags' => ['nullable', 'string', 'max:650', 'not_regex:/\x00/'],
+            'project_id' => ['nullable', 'integer', Rule::exists('projects', 'id')->where('user_id', $this->user()?->id)],
             'version' => ['required', 'integer', 'min:0'],
         ];
     }

@@ -47,6 +47,7 @@ class VaultEntryController extends Controller
                     'username' => $username,
                     'secret_kind' => $validated['secret_kind'],
                     'metadata' => $request->metadata(),
+                    'project_id' => $validated['project_id'] ?? null,
                 ]);
                 $entry->sensitive_payload = $this->cryptography->encryptEntryPayload(
                     $vault,
@@ -78,6 +79,7 @@ class VaultEntryController extends Controller
         $tagNames = $this->tags->parse($validated['tags'] ?? null);
         $url = $this->urlFor($validated);
         $username = $this->usernameFor($validated);
+        $projectId = array_key_exists('project_id', $validated) ? $validated['project_id'] : $vaultEntry->project_id;
 
         try {
             $existingPayload = $this->cryptography->decryptEntryPayload($vault, $vaultKey, $vaultEntry->sensitive_payload);
@@ -86,7 +88,7 @@ class VaultEntryController extends Controller
                 $vaultKey,
                 $this->payloads->fromValidated($validated, $existingPayload),
             );
-            $updated = DB::transaction(function () use ($vault, $user, $vaultEntry, $validated, $request, $encryptedPayload, $expectedVersion, $tagNames, $url, $username): bool {
+            $updated = DB::transaction(function () use ($vault, $user, $vaultEntry, $validated, $request, $encryptedPayload, $expectedVersion, $tagNames, $url, $username, $projectId): bool {
                 $changed = VaultEntry::query()->forVault($vault)->whereKey($vaultEntry->id)->where('lock_version', $expectedVersion)->update([
                     'type' => $validated['type'],
                     'title' => trim($validated['title']),
@@ -94,6 +96,7 @@ class VaultEntryController extends Controller
                     'username' => $username,
                     'secret_kind' => $validated['secret_kind'],
                     'metadata' => $request->metadata(),
+                    'project_id' => $projectId,
                     'sensitive_payload' => $encryptedPayload,
                     'lock_version' => $expectedVersion + 1,
                     'updated_at' => now(),

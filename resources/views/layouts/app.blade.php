@@ -8,12 +8,15 @@
     <meta name="robots" content="noindex, nofollow">
     <title>@yield('title', 'Scrunote')</title>
     <link rel="icon" type="image/png" href="{{ asset('images/logo_icon.png') }}">
+    @include('partials.theme-bootstrap')
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @if ($page['id'] === 'markdown')
         @vite('resources/js/markdown.js')
     @elseif ($page['id'] === 'vault')
         @vite('resources/js/vault.js')
+    @elseif ($page['id'] === 'settings')
+        @vite('resources/js/settings.js')
     @endif
     @livewireStyles
 </head>

@@ -13,6 +13,7 @@ class WorkspaceLayoutData
     {
         $navigation = WorkspaceNavigation::items();
         $page = collect($navigation)->firstWhere('route', $routeName)
+            ?? ($routeName === 'projects.show' ? collect($navigation)->firstWhere('route', 'projects.index') : null)
             ?? WorkspaceNavigation::utilityPage($routeName);
         abort_unless($page, 404);
 

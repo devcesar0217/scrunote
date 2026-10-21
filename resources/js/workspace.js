@@ -19,17 +19,48 @@ function workspaceShell({ navigation, searchUrl, initialSearchQuery = '' }) {
         returnNavigationFocus: true,
         returnPaletteFocus: true,
         pageHideHandler: null,
+        theme: 'dark',
+        themeChangedHandler: null,
 
         init() {
+            this.theme = this.readTheme();
+            this.applyTheme(this.theme);
             this.pageHideHandler = () => document.documentElement.classList.remove('workspace-modal-open');
+            this.themeChangedHandler = event => this.setTheme(event.detail);
             window.addEventListener('pagehide', this.pageHideHandler);
+            window.addEventListener('scrunote-theme-change', this.themeChangedHandler);
         },
 
         destroy() {
             clearTimeout(this.searchTimer);
             this.searchAbortController?.abort();
             window.removeEventListener('pagehide', this.pageHideHandler);
+            window.removeEventListener('scrunote-theme-change', this.themeChangedHandler);
             document.documentElement.classList.remove('workspace-modal-open');
+        },
+
+        readTheme() {
+            try {
+                const stored = window.localStorage.getItem('scrunote.theme');
+                return stored === 'light' || stored === 'dark' ? stored : 'dark';
+            } catch (_) {
+                return 'dark';
+            }
+        },
+
+        applyTheme(theme) {
+            document.documentElement.dataset.theme = theme;
+        },
+
+        setTheme(theme) {
+            if (theme !== 'light' && theme !== 'dark') return;
+            this.theme = theme;
+            this.applyTheme(theme);
+            try {
+                window.localStorage.setItem('scrunote.theme', theme);
+            } catch (_) {
+                // The live preference still works when storage is unavailable.
+            }
         },
 
         get normalizedSearchQuery() {

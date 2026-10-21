@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Project;
 use App\Models\User;
 use App\Models\Vault;
 use App\Models\VaultEntry;
@@ -30,7 +31,7 @@ class VaultController extends Controller
         $vault = $user->vault;
         abort_if($vault === null, 404);
 
-        $selected = $this->entriesFor($vault, '')
+        $selected = $this->entriesFor($vault, '', null)
             ->whereKey($vaultEntry->id)
             ->firstOrFail();
 
@@ -44,9 +45,11 @@ class VaultController extends Controller
         /** @var User $user */
         $user = $request->user();
         $vault = $user->vault;
+        $projectFilter = $this->projectFilter($request, $user);
+        $projects = Project::query()->ownedBy($user)->orderBy('title')->get(['id', 'title']);
         $entries = $vault === null
             ? collect()
-            : $this->entriesFor($vault, $query)->simplePaginate(50)->withQueryString();
+            : $this->entriesFor($vault, $query, $projectFilter)->simplePaginate(50)->withQueryString();
 
         return view('pages.vault.index', [
             ...$this->layout->for($request, 'vault.index'),
@@ -54,17 +57,37 @@ class VaultController extends Controller
             'entries' => $entries,
             'selectedEntry' => $selected,
             'search' => $query,
+            'projects' => $projects,
+            'projectFilter' => $projectFilter,
             'vaultUnlocked' => $vault !== null && $this->vaultSession->isUnlocked($request, $user),
             'idleTimeoutMinutes' => (int) config('vault.idle_timeout_minutes', 5),
-            'createRequested' => $selected === null && $request->boolean('new'),
+            'createRequested' => $selected === null && ($request->boolean('new') || $request->boolean('create')),
             'editRequested' => $selected !== null && $request->boolean('edit'),
         ]);
     }
 
+    private function projectFilter(Request $request, User $user): int|string|null
+    {
+        $filter = $request->query('project');
+        if ($filter === null || $filter === '') {
+            return null;
+        }
+        if ($filter === 'mine') {
+            return 'mine';
+        }
+        abort_unless(is_string($filter) && ctype_digit($filter), 404);
+        $project = Project::query()->ownedBy($user)->find($filter);
+        abort_if($project === null, 404);
+
+        return $project->id;
+    }
+
     /** @return Builder<VaultEntry> */
-    private function entriesFor(Vault $vault, string $search): Builder
+    private function entriesFor(Vault $vault, string $search, int|string|null $projectFilter): Builder
     {
         return VaultEntry::query()->forVault($vault)->with('tags:id,name')
+            ->when($projectFilter === 'mine', fn (Builder $query) => $query->whereNull('project_id'))
+            ->when(is_int($projectFilter), fn (Builder $query) => $query->where('project_id', $projectFilter))
             ->when($search !== '', function (Builder $query) use ($search): void {
                 $needle = '%'.$search.'%';
                 $query->where(function (Builder $query) use ($needle): void {

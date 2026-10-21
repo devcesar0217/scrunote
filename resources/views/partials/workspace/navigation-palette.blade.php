@@ -3,7 +3,7 @@
     <h2 id="workspace-palette-title" class="sr-only">Global Search</h2>
     <div class="workspace-palette-search">
         <x-icon name="search" />
-        <label for="workspace-search-query" class="sr-only">Search Notes, Markdown Docs, and Vault metadata</label>
+        <label for="workspace-search-query" class="sr-only">Search Projects, Notes, Markdown Docs, and Vault metadata</label>
         <input id="workspace-search-query" type="search" x-ref="paletteInput" x-model="searchQuery" maxlength="120"
             placeholder="Search your workspace…" autocomplete="off" autofocus @input="queueSearch()" @keydown.enter.prevent="visitFirstResult()">
         <button type="button" class="workspace-icon-button" @click="closePalette()" aria-label="Close global search">
@@ -30,7 +30,7 @@
     </ul>
     <p class="workspace-palette-empty" x-show="searchMessage !== ''" x-text="searchMessage" x-cloak></p>
     <div class="workspace-palette-footer">
-        <p>Searches your Notes, Markdown Docs, tags, and Vault non-secret metadata. Vault secrets and encrypted notes are never searched.</p>
+        <p>Searches your Projects, Notes, Markdown Docs, tags, and Vault non-secret metadata. Vault secrets and encrypted notes are never searched.</p>
         <span><kbd>↑</kbd><kbd>↓</kbd> navigate <kbd>Enter</kbd> open <kbd>Esc</kbd> close</span>
     </div>
 </dialog>

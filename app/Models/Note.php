@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 /**
  * @property array{html?: string}|null $content
  */
-#[Fillable(['title', 'content', 'content_text', 'is_pinned', 'is_favorite', 'archived_at'])]
+#[Fillable(['title', 'content', 'content_text', 'project_id', 'is_pinned', 'is_favorite', 'archived_at'])]
 class Note extends Model
 {
     /** @use HasFactory<NoteFactory> */
@@ -41,6 +41,12 @@ class Note extends Model
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(Tag::class, 'note_tags');
+    }
+
+    /** @return BelongsTo<Project, $this> */
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
     }
 
     /** @param Builder<Note> $query @return Builder<Note> */

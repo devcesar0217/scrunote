@@ -57,18 +57,18 @@ markdownRenderer.renderer.rules.image = (tokens, index) => {
 };
 
 const scrunoteEditorTheme = EditorView.theme({
-    '&': { height: '100%', color: '#d9e0e8', backgroundColor: '#0e1117' },
+    '&': { height: '100%', color: 'var(--sn-soft)', backgroundColor: 'var(--sn-field)' },
     '&.cm-focused': { outline: 'none' },
     '.cm-scroller': { overflow: 'auto', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace' },
-    '.cm-content': { minHeight: '100%', padding: '18px 0', caretColor: '#6ee7b7', fontSize: '12px', lineHeight: '1.7' },
+    '.cm-content': { minHeight: '100%', padding: '18px 0', caretColor: '#059669', fontSize: '12px', lineHeight: '1.7' },
     '.cm-line': { padding: '0 16px' },
-    '.cm-gutters': { minHeight: '100%', border: '0', backgroundColor: '#10131a', color: '#697586' },
+    '.cm-gutters': { minHeight: '100%', border: '0', backgroundColor: 'var(--sn-field-alt)', color: 'var(--sn-faint)' },
     '.cm-gutterElement': { padding: '0 8px 0 10px' },
-    '.cm-activeLine': { backgroundColor: '#1c202b80' },
-    '.cm-activeLineGutter': { backgroundColor: '#1c202b' },
+    '.cm-activeLine': { backgroundColor: 'color-mix(in srgb, var(--sn-raised) 75%, transparent)' },
+    '.cm-activeLineGutter': { backgroundColor: 'var(--sn-raised)' },
     '.cm-selectionBackground, &.cm-focused .cm-selectionBackground': { backgroundColor: '#10b98138' },
-    '.cm-cursor, .cm-dropCursor': { borderLeftColor: '#6ee7b7' },
-    '.cm-foldPlaceholder': { border: '0', backgroundColor: '#1c202b', color: '#a3adba' },
+    '.cm-cursor, .cm-dropCursor': { borderLeftColor: '#059669' },
+    '.cm-foldPlaceholder': { border: '0', backgroundColor: 'var(--sn-raised)', color: 'var(--sn-muted)' },
 }, { dark: true });
 
 function markdownWorkspace({ selected }) {
@@ -305,6 +305,7 @@ function documentEditor({ documentId, version, saveUrl, pinVersionId }) {
                 this.version = data.document.version;
                 this.serialize();
                 if (this.$refs.tags) this.$refs.tags.value = data.document.tags.join(', ');
+                if (this.$refs.project) this.$refs.project.value = data.document.project?.id || '';
                 this.updateDocumentsList(data.document);
                 this.statusMessage = 'Autosaved.';
             } catch (_) {

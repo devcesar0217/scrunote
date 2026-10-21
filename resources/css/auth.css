@@ -14,7 +14,7 @@
     }
 
     .auth-background {
-        background-color: #0d0e12;
+        background-color: var(--sn-canvas);
         background-image:
             radial-gradient(ellipse at 76% 10%, rgb(16 185 129 / 0.045), transparent 58%),
             linear-gradient(to right, rgb(255 255 255 / 0.022) 1px, transparent 1px),
@@ -36,17 +36,17 @@
         @apply placeholder:text-muted/85 focus:outline-none;
         @apply aria-invalid:border-rose-400/70;
         /* Essential control boundaries exceed 3:1 against the dark surfaces. */
-        border-color: #5d6775;
+        border-color: var(--sn-control-border-strong);
     }
 
     .auth-page .check:not(:checked) {
-        border-color: #5d6775;
+        border-color: var(--sn-control-border-strong);
     }
 
     .auth-page input:focus,
     .auth-page textarea:focus,
     .auth-page select:focus {
-        border-color: #5d6775;
+        border-color: var(--sn-control-border-strong);
         box-shadow: none;
         outline: none;
     }

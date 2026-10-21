@@ -3,6 +3,7 @@
     $metadata = $selectedEntry?->metadata ?? [];
     $formType = old('type', $selectedEntry?->type ?? 'login');
     $formSecretKind = old('secret_kind', $selectedEntry?->secret_kind ?? ($formType === 'secure_note' ? 'secure_note' : ($formType === 'api' ? 'api_key' : 'password')));
+    $formProjectId = old('project_id', $selectedEntry?->project_id ?? (is_int($projectFilter) ? $projectFilter : null));
 @endphp
 
 <form class="vault-entry-form" method="POST" action="{{ $editing ? route('vault.entries.update', $selectedEntry) : route('vault.entries.store') }}"
@@ -22,7 +23,7 @@
             <h2>{{ $editing ? $selectedEntry->title : 'New vault entry' }}</h2>
             <p>Secret fields are encrypted only when this form is submitted.</p>
         </div>
-        <a href="{{ $editing ? route('vault.show', $selectedEntry) : route('vault.index') }}" class="vault-subtle-button">Cancel</a>
+        <a href="{{ $editing ? route('vault.show', array_filter(['vaultEntry' => $selectedEntry, 'project' => $projectFilter])) : route('vault.index', array_filter(['project' => $projectFilter])) }}" class="vault-subtle-button">Cancel</a>
     </header>
 
     @if ($errors->any())
@@ -37,6 +38,14 @@
             <span>Service or entry name</span>
             <input type="text" name="title" value="{{ old('title', $selectedEntry?->title) }}" maxlength="160"
                 placeholder="Example: Production database" autocomplete="off" required autofocus>
+        </label>
+
+        <label class="vault-field">
+            <span>Project</span>
+            <select name="project_id">
+                <option value="">My Workspace</option>
+                @foreach ($projects as $project)<option value="{{ $project->id }}" @selected((string) $formProjectId === (string) $project->id)>{{ $project->title }}</option>@endforeach
+            </select>
         </label>
 
         <label class="vault-field">
@@ -154,7 +163,7 @@
     <footer class="vault-entry-form-footer">
         <p><x-icon name="shield-lock" /> Secret values and notes are encrypted at rest and are not searchable.</p>
         <div>
-            <a href="{{ $editing ? route('vault.show', $selectedEntry) : route('vault.index') }}" class="vault-subtle-button">Cancel</a>
+            <a href="{{ $editing ? route('vault.show', array_filter(['vaultEntry' => $selectedEntry, 'project' => $projectFilter])) : route('vault.index', array_filter(['project' => $projectFilter])) }}" class="vault-subtle-button">Cancel</a>
             <button type="submit" class="vault-primary-button"><x-icon name="device-floppy" /> {{ $editing ? 'Save changes' : 'Save entry' }}</button>
         </div>
     </footer>

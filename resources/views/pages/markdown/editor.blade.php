@@ -29,6 +29,15 @@
         </button>
     </div>
 
+    <div class="markdown-project-row">
+        <x-icon name="folder" />
+        <label for="document-project">Project</label>
+        <select id="document-project" name="project_id" x-ref="project" @change="markDirty()">
+            <option value="">My Workspace</option>
+            @foreach ($projects as $project)<option value="{{ $project->id }}" @selected((string) old('project_id', $selectedDocument->project_id) === (string) $project->id)>{{ $project->title }}</option>@endforeach
+        </select>
+    </div>
+
     <div class="markdown-tag-row">
         <x-icon name="tags" />
         <label class="sr-only" for="document-tags">Tags, separated by commas</label>

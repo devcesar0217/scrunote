@@ -16,6 +16,7 @@
                 </button>
                 <form method="POST" action="{{ route('markdown.store') }}">
                     @csrf
+                    @if (is_int($projectFilter))<input type="hidden" name="project_id" value="{{ $projectFilter }}">@endif
                     <button type="submit" class="markdown-primary-button"><x-icon name="plus" /> New document</button>
                 </form>
             </div>
@@ -34,16 +35,23 @@
                         <input id="markdown-search-query" type="search" name="q" value="{{ $search }}" maxlength="120"
                             placeholder="Title, content, or tag" autocomplete="off">
                     </div>
+                    <label class="markdown-project-filter" for="markdown-project-filter"><x-icon name="folder" /><span>Location</span>
+                        <select id="markdown-project-filter" name="project" onchange="this.form.submit()">
+                            <option value="" @selected($projectFilter === null)>All workspace</option>
+                            <option value="mine" @selected($projectFilter === 'mine')>My Workspace</option>
+                            @foreach ($projects as $project)<option value="{{ $project->id }}" @selected($projectFilter === $project->id)>{{ $project->title }}</option>@endforeach
+                        </select>
+                    </label>
                 </form>
 
                 <div class="markdown-list-summary">
                     <span>{{ $documents->count() }} {{ Str::plural('document', $documents->count()) }}{{ $search !== '' ? ' found' : '' }}</span>
-                    @if ($search !== '')<a href="{{ route('markdown.index') }}">Clear</a>@endif
+                    @if ($search !== '')<a href="{{ route('markdown.index', array_filter(['project' => $projectFilter])) }}">Clear</a>@endif
                 </div>
 
                 <div class="markdown-list" aria-live="polite">
                     @forelse ($documents as $document)
-                        <a href="{{ route('markdown.show', $document) }}" class="markdown-list-item {{ $selectedDocument?->is($document) ? 'is-selected' : '' }}" data-document-id="{{ $document->id }}"
+                        <a href="{{ route('markdown.show', array_filter(['document' => $document, 'project' => $projectFilter])) }}" class="markdown-list-item {{ $selectedDocument?->is($document) ? 'is-selected' : '' }}" data-document-id="{{ $document->id }}"
                             @click="closeListForSelection()" @if ($selectedDocument?->is($document)) aria-current="page" @endif>
                             <span class="markdown-list-title"><span data-document-list-title>{{ $document->display_title }}</span>@if ($document->is_pinned)<x-icon name="pin-filled" aria-label="Pinned" />@endif</span>
                             <span class="markdown-list-tags" data-document-list-tags @if ($document->tags->isEmpty()) hidden @endif>{{ $document->tags->map(fn ($tag) => '#'.$tag->name)->implode(' ') }}</span>
@@ -54,7 +62,7 @@
                         <div class="markdown-list-empty">
                             <x-icon name="markdown" />
                             <p>{{ $search !== '' ? 'No documents match this search.' : 'No documents yet.' }}</p>
-                            @if ($search !== '')<a href="{{ route('markdown.index') }}">Clear search</a>@endif
+                            @if ($search !== '')<a href="{{ route('markdown.index', array_filter(['project' => $projectFilter])) }}">Clear search</a>@endif
                         </div>
                     @endforelse
                 </div>
@@ -77,6 +85,7 @@
                         <p>Create a private Markdown document with an editor and safe live preview.</p>
                         <form method="POST" action="{{ route('markdown.store') }}">
                             @csrf
+                            @if (is_int($projectFilter))<input type="hidden" name="project_id" value="{{ $projectFilter }}">@endif
                             <button type="submit" class="workspace-secondary-button"><x-icon name="plus" /> Create your first document</button>
                         </form>
                     </div>

@@ -198,6 +198,7 @@ function noteEditor({ noteId, version, saveUrl, pinVersionId }) {
                 this.version = data.note.version;
                 this.serialize();
                 if (this.$refs.tags) this.$refs.tags.value = data.note.tags.join(', ');
+                if (this.$refs.project) this.$refs.project.value = data.note.project?.id || '';
                 this.updateNotesList(data.note);
                 this.statusMessage = 'Autosaved.';
             } catch (_) {
