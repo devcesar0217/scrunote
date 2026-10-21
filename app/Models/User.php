@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -44,10 +45,22 @@ class User extends Authenticatable
         return $this->hasMany(Note::class);
     }
 
+    /** @return HasMany<Document, $this> */
+    public function documents(): HasMany
+    {
+        return $this->hasMany(Document::class);
+    }
+
     /** @return HasMany<Tag, $this> */
     public function tags(): HasMany
     {
         return $this->hasMany(Tag::class);
+    }
+
+    /** @return HasOne<Vault, $this> */
+    public function vault(): HasOne
+    {
+        return $this->hasOne(Vault::class);
     }
 
     protected function casts(): array

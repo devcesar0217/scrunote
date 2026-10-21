@@ -2,9 +2,16 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\NoteController;
+use App\Http\Controllers\VaultController;
+use App\Http\Controllers\VaultEntryController;
+use App\Http\Controllers\VaultSecretController;
+use App\Http\Controllers\VaultSessionController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\EnsureVaultIsUnlocked;
 use App\Http\Middleware\PrivateResponseHeaders;
 use Illuminate\Support\Facades\Route;
 
@@ -19,6 +26,7 @@ Route::middleware(PrivateResponseHeaders::class)->group(function (): void {
 
     Route::middleware(['auth', EnsureUserIsActive::class, 'auth.session'])->group(function (): void {
         Route::get('/', WorkspaceController::class)->name('dashboard');
+        Route::get('/search', GlobalSearchController::class)->name('search.index');
 
         Route::get('/notes', [NoteController::class, 'index'])->name('notes.index');
         Route::post('/notes', [NoteController::class, 'store'])->name('notes.store');
@@ -27,9 +35,29 @@ Route::middleware(PrivateResponseHeaders::class)->group(function (): void {
         Route::patch('/notes/{note}/pin', [NoteController::class, 'togglePin'])->name('notes.pin');
         Route::delete('/notes/{note}', [NoteController::class, 'destroy'])->name('notes.destroy');
 
-        // Other destinations remain shell boundaries until their own phases.
-        Route::get('/markdown', WorkspaceController::class)->name('markdown.index');
-        Route::get('/vault', WorkspaceController::class)->name('vault.index');
+        Route::get('/markdown', [DocumentController::class, 'index'])->name('markdown.index');
+        Route::post('/markdown', [DocumentController::class, 'store'])->name('markdown.store');
+        Route::get('/markdown/{document}', [DocumentController::class, 'show'])->name('markdown.show');
+        Route::patch('/markdown/{document}', [DocumentController::class, 'update'])->name('markdown.update');
+        Route::patch('/markdown/{document}/pin', [DocumentController::class, 'togglePin'])->name('markdown.pin');
+        Route::get('/markdown/{document}/export', [DocumentController::class, 'export'])->name('markdown.export');
+        Route::delete('/markdown/{document}', [DocumentController::class, 'destroy'])->name('markdown.destroy');
+
+        Route::get('/vault', [VaultController::class, 'index'])->name('vault.index');
+        Route::post('/vault/setup', [VaultSessionController::class, 'setup'])->middleware('throttle:vault-unlock')->name('vault.setup');
+        Route::post('/vault/unlock', [VaultSessionController::class, 'unlock'])->middleware('throttle:vault-unlock')->name('vault.unlock');
+        Route::post('/vault/lock', [VaultSessionController::class, 'lock'])->name('vault.lock');
+        Route::post('/vault/heartbeat', [VaultSessionController::class, 'heartbeat'])->name('vault.heartbeat');
+        Route::get('/vault/{vaultEntry}', [VaultController::class, 'show'])->name('vault.show');
+
+        Route::middleware(EnsureVaultIsUnlocked::class)->group(function (): void {
+            Route::post('/vault/entries', [VaultEntryController::class, 'store'])->name('vault.entries.store');
+            Route::patch('/vault/entries/{vaultEntry}', [VaultEntryController::class, 'update'])->name('vault.entries.update');
+            Route::patch('/vault/entries/{vaultEntry}/pin', [VaultEntryController::class, 'togglePin'])->name('vault.entries.pin');
+            Route::delete('/vault/entries/{vaultEntry}', [VaultEntryController::class, 'destroy'])->name('vault.entries.destroy');
+            Route::post('/vault/entries/{vaultEntry}/secret', [VaultSecretController::class, 'reveal'])->name('vault.entries.secret');
+        });
+
         Route::get('/settings', WorkspaceController::class)->name('settings.index');
     });
 

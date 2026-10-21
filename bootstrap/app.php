@@ -17,6 +17,15 @@ return Application::configure(basePath: dirname(__DIR__))
 
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Vault validation errors must never put credential material or its
+        // independent master password into the redirect's session flash data.
+        $exceptions->dontFlash([
+            'master_password',
+            'master_password_confirmation',
+            'secret',
+            'notes',
+        ]);
+
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );

@@ -1,8 +1,16 @@
 // Alpine owns local shell state. Livewire supplies Alpine; do not start another copy.
-function workspaceShell(sections) {
+function workspaceShell({ navigation, searchUrl, initialSearchQuery = '' }) {
     return {
-        sections,
-        query: '',
+        navigation,
+        searchUrl,
+        initialSearchQuery,
+        searchQuery: '',
+        searchResults: [],
+        searchHasMore: false,
+        searchState: 'idle',
+        searchTimer: null,
+        searchAbortController: null,
+        searchRequestId: 0,
         navigationOpen: false,
         paletteOpen: false,
         accountExpanded: false,
@@ -18,13 +26,33 @@ function workspaceShell(sections) {
         },
 
         destroy() {
+            clearTimeout(this.searchTimer);
+            this.searchAbortController?.abort();
             window.removeEventListener('pagehide', this.pageHideHandler);
             document.documentElement.classList.remove('workspace-modal-open');
         },
 
-        get matchingSections() {
-            const query = this.query.trim().toLocaleLowerCase();
-            return this.sections.filter(item => `${item.label} ${item.description}`.toLocaleLowerCase().includes(query));
+        get normalizedSearchQuery() {
+            return this.searchQuery.trim();
+        },
+
+        get searchContext() {
+            if (this.searchState === 'loading') return 'Searching your workspace…';
+            if (this.normalizedSearchQuery.length < 2) return 'Global Search';
+            return this.searchHasMore ? 'Refine your search for more matches' : 'Private workspace results';
+        },
+
+        get searchCount() {
+            if (this.searchState === 'loading') return 'Searching…';
+            if (this.normalizedSearchQuery.length === 0) return 'Notes · Markdown · Vault';
+            if (this.normalizedSearchQuery.length < 2) return 'Type at least 2 characters';
+            return `${this.searchResults.length} ${this.searchResults.length === 1 ? 'result' : 'results'}`;
+        },
+
+        get searchMessage() {
+            if (this.searchState === 'loading' || this.normalizedSearchQuery.length === 0 || this.normalizedSearchQuery.length < 2) return '';
+            if (this.searchState === 'error') return 'Search could not be completed. Please try again.';
+            return this.searchResults.length === 0 ? 'No private workspace items match this search.' : '';
         },
 
         syncScrollLock() {
@@ -62,7 +90,7 @@ function workspaceShell(sections) {
             this.closeAccount(false);
             this.paletteReturn = trigger || document.activeElement;
             this.returnPaletteFocus = true;
-            this.query = '';
+            this.resetSearch();
             this.paletteOpen = true;
             if (!this.$refs.palette.open) this.$refs.palette.showModal();
             this.syncScrollLock();
@@ -71,17 +99,75 @@ function workspaceShell(sections) {
 
         closePalette(restoreFocus = true) {
             this.returnPaletteFocus = restoreFocus;
+            clearTimeout(this.searchTimer);
+            this.searchAbortController?.abort();
             this.paletteOpen = false;
             if (this.$refs.palette.open) this.$refs.palette.close();
             this.syncScrollLock();
         },
 
         paletteClosed() {
+            const shouldRestoreFocus = this.returnPaletteFocus;
             this.paletteOpen = false;
             this.syncScrollLock();
-            if (this.returnPaletteFocus) this.$nextTick(() => {
-                if (this.paletteReturn?.isConnected) this.paletteReturn.focus({ preventScroll: true });
+            if (shouldRestoreFocus) this.$nextTick(() => {
+                // A keyboard shortcut can reopen the dialog before this close
+                // handler's next tick runs; never steal focus from the new dialog.
+                if (!this.paletteOpen && this.paletteReturn?.isConnected) this.paletteReturn.focus({ preventScroll: true });
             });
+        },
+
+        resetSearch() {
+            clearTimeout(this.searchTimer);
+            this.searchAbortController?.abort();
+            this.searchRequestId += 1;
+            this.searchQuery = '';
+            this.searchResults = [];
+            this.searchHasMore = false;
+            this.searchState = 'idle';
+        },
+
+        queueSearch() {
+            clearTimeout(this.searchTimer);
+            this.searchAbortController?.abort();
+            this.searchResults = [];
+            this.searchHasMore = false;
+            this.searchState = 'idle';
+            if (this.normalizedSearchQuery.length < 2) return;
+
+            this.searchTimer = setTimeout(() => this.search(), 220);
+        },
+
+        async search() {
+            const query = this.normalizedSearchQuery;
+            if (query.length < 2) return;
+
+            const requestId = ++this.searchRequestId;
+            this.searchAbortController?.abort();
+            this.searchAbortController = new AbortController();
+            this.searchState = 'loading';
+
+            const url = new URL(this.searchUrl, window.location.origin);
+            url.searchParams.set('q', query);
+            try {
+                const response = await fetch(url, {
+                    credentials: 'same-origin',
+                    signal: this.searchAbortController.signal,
+                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok || !Array.isArray(payload.results)) throw new Error('Search response was invalid.');
+                if (requestId !== this.searchRequestId) return;
+
+                this.searchResults = payload.results;
+                this.searchHasMore = payload.has_more === true;
+                this.searchState = 'ready';
+            } catch (error) {
+                if (error.name === 'AbortError' || requestId !== this.searchRequestId) return;
+                this.searchResults = [];
+                this.searchHasMore = false;
+                this.searchState = 'error';
+            }
         },
 
         closeAccount(restoreFocus = true) {
@@ -127,7 +213,7 @@ function workspaceShell(sections) {
         },
 
         visitFirstResult() {
-            if (this.matchingSections.length) window.location.assign(this.matchingSections[0].url);
+            if (this.searchResults.length) window.location.assign(this.searchResults[0].url);
         },
 
         handleShortcut(event) {

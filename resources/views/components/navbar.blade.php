@@ -12,12 +12,12 @@
         <span class="workspace-breadcrumb-current" aria-current="page">{{ $page['label'] }}</span>
     </div>
 
-    <button type="button" class="workspace-search-trigger" x-cloak @click="openPalette($el)"
-        aria-label="Find a workspace section" aria-haspopup="dialog" aria-controls="workspace-palette">
+    <a href="{{ route('search.index') }}" class="workspace-search-trigger" @click.prevent="openPalette($el)"
+        aria-label="Search your workspace" aria-haspopup="dialog" aria-controls="workspace-palette">
         <x-icon name="search" />
-        <span>Find a workspace section…</span>
+        <span>Search your workspace…</span>
         <kbd aria-hidden="true">Ctrl/⌘ K</kbd>
-    </button>
+    </a>
 
     <details class="workspace-account" x-ref="account" @toggle="accountExpanded = $el.open"
         @click.outside="closeAccount(false)" @keydown.escape.stop.prevent="closeAccount()"

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Document;
 use App\Models\Note;
 use App\Support\WorkspaceLayoutData;
 use Illuminate\Http\Request;
@@ -26,6 +27,8 @@ class WorkspaceController extends Controller
         return view('pages.dashboard', [
             ...$data,
             'notesCount' => Note::query()->ownedBy($user)->active()->count(),
+            'documentsCount' => Document::query()->ownedBy($user)->active()->count(),
+            'vaultEntriesCount' => $user->vault?->entries()->count() ?? 0,
             'recentNotes' => $recentNotes,
         ]);
     }

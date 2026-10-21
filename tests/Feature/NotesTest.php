@@ -200,7 +200,9 @@ class NotesTest extends TestCase
     {
         $this->assertTrue(Schema::hasTable('notes'));
         $this->assertTrue(Schema::hasTable('note_tags'));
-        Artisan::call('migrate:rollback', ['--step' => 2, '--no-interaction' => true]);
+        // Phase 5/6 migrations were added after Notes. Roll them, the Notes
+        // lock-version migration, and the Notes table migration in one pass.
+        Artisan::call('migrate:rollback', ['--step' => 5, '--no-interaction' => true]);
         $this->assertFalse(Schema::hasTable('notes'));
         $this->assertFalse(Schema::hasTable('note_tags'));
         $this->assertTrue(Schema::hasTable('tags'));

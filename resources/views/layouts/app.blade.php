@@ -10,12 +10,21 @@
     <link rel="icon" type="image/png" href="{{ asset('images/logo_icon.png') }}">
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @if ($page['id'] === 'markdown')
+        @vite('resources/js/markdown.js')
+    @elseif ($page['id'] === 'vault')
+        @vite('resources/js/vault.js')
+    @endif
     @livewireStyles
 </head>
 <body class="workspace-page">
     <a class="workspace-skip" href="#workspace-content">Skip to content</a>
 
-    <div class="workspace-shell" x-data="workspaceShell({{ Illuminate\Support\Js::from($navigation) }})"
+    <div class="workspace-shell" x-data="workspaceShell({
+        navigation: {{ Illuminate\Support\Js::from($navigation) }},
+        searchUrl: {{ Illuminate\Support\Js::from(route('search.index')) }},
+        initialSearchQuery: {{ Illuminate\Support\Js::from($page['id'] === 'search' ? ($query ?? '') : '') }},
+    })"
         @keydown.window="handleShortcut($event)" @resize.window.debounce.120ms="handleResize()"
         @pageshow.window="restorePageState()">
         <aside class="workspace-desktop-rail" aria-label="Workspace sidebar">
@@ -30,6 +39,7 @@
                     @foreach ($navigation as $item)
                         <a href="{{ $item['url'] }}" @if ($page['route'] === $item['route']) aria-current="page" @endif>{{ $item['label'] }}</a>
                     @endforeach
+                    <a href="{{ route('search.index') }}" @if ($page['route'] === 'search.index') aria-current="page" @endif>Global Search</a>
                 </nav>
             </noscript>
 

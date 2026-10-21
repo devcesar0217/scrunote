@@ -3,6 +3,9 @@
 @import './auth.css';
 @import './workspace.css';
 @import './notes.css';
+@import './markdown.css';
+@import './vault.css';
+@import './search.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';

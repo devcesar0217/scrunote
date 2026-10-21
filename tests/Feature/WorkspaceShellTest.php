@@ -19,8 +19,9 @@ class WorkspaceShellTest extends TestCase
         return [
             'overview' => ['/', 'overview', 'Overview', 'pages.dashboard'],
             'notes' => ['/notes', 'notes', 'Notes', 'pages.notes.index'],
-            'markdown' => ['/markdown', 'markdown', 'Markdown Docs', 'pages.section-unavailable'],
-            'vault' => ['/vault', 'vault', 'Secure Vault', 'pages.section-unavailable'],
+            'markdown' => ['/markdown', 'markdown', 'Markdown Docs', 'pages.markdown.index'],
+            'vault' => ['/vault', 'vault', 'Secure Vault', 'pages.vault.index'],
+            'search' => ['/search', 'search', 'Global Search', 'pages.search.index'],
             'settings' => ['/settings', 'settings', 'Settings', 'pages.section-unavailable'],
         ];
     }
@@ -28,8 +29,6 @@ class WorkspaceShellTest extends TestCase
     public static function unavailableSections(): array
     {
         return [
-            'markdown' => ['/markdown', 'markdown', 'Phase 5'],
-            'vault' => ['/vault', 'vault', 'Phase 6'],
             'settings' => ['/settings', 'settings', 'Phase 8'],
         ];
     }
@@ -48,7 +47,7 @@ class WorkspaceShellTest extends TestCase
             ->assertViewIs($view)
             ->assertViewHas('page', fn (array $page): bool => $page['id'] === $id)
             ->assertSee($label)->assertSee('Alex Morgan')->assertSee($user->email)
-            ->assertSee('Skip to content')->assertSee('Navigate workspace')
+            ->assertSee('Skip to content')->assertSee('Global Search')->assertSee('Search your workspace')
             ->assertSee('Sign out')->assertSee('Web account')
             ->assertHeader('Referrer-Policy', 'no-referrer')
             ->assertHeader('X-Content-Type-Options', 'nosniff');
@@ -92,10 +91,10 @@ class WorkspaceShellTest extends TestCase
             ->assertDontSee('Create backup');
     }
 
-    public function test_future_module_mutation_endpoints_are_not_exposed(): void
+    public function test_unavailable_settings_mutation_endpoints_are_not_exposed(): void
     {
         $this->actingAs(User::factory()->create());
-        foreach (['/markdown', '/vault', '/settings'] as $path) {
+        foreach (['/settings'] as $path) {
             foreach (['post', 'put', 'patch', 'delete'] as $method) {
                 $this->{$method}($path, ['title' => 'Must not be saved'])->assertMethodNotAllowed();
             }
@@ -103,18 +102,16 @@ class WorkspaceShellTest extends TestCase
         }
     }
 
-    public function test_future_module_pages_do_not_query_notes_or_other_module_records(): void
+    public function test_unavailable_settings_page_does_not_query_module_records(): void
     {
         $user = User::factory()->create();
         DB::enableQueryLog();
         DB::flushQueryLog();
-        foreach (['/markdown', '/vault', '/settings'] as $path) {
-            $this->actingAs($user)->get($path)->assertOk();
-        }
+        $this->actingAs($user)->get('/settings')->assertOk();
         $queries = DB::getQueryLog();
         DB::disableQueryLog();
         foreach ($queries as $query) {
-            $this->assertDoesNotMatchRegularExpression('/\b(notes|note_tags|tags|documents|vault_entries)\b/i', $query['query']);
+            $this->assertDoesNotMatchRegularExpression('/\b(notes|note_tags|tags|documents|vault_entries|vaults)\b/i', $query['query']);
         }
     }
 

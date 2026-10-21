@@ -7,7 +7,7 @@
             <p class="workspace-eyebrow">Personal developer workspace</p>
             <h1 id="overview-heading">Welcome back, {{ $identity['first_name'] }}.</h1>
             <p class="workspace-hero-description">Keep ideas, Markdown references, and account credentials organized in one private place.</p>
-            <p class="workspace-hero-meta">Your Notes are connected. Other modules follow in their approved phases.</p>
+            <p class="workspace-hero-meta">Your Notes and Markdown Docs are connected. Other modules follow in their approved phases.</p>
         </div>
         <a href="{{ route('dashboard') }}" class="workspace-secondary-button workspace-refresh" aria-label="Refresh overview">
             <x-icon name="refresh" /> Refresh
@@ -28,6 +28,14 @@
                         <span class="workspace-module-count">{{ $notesCount }}</span>
                         <span class="workspace-module-label">{{ Str::plural('Note', $notesCount) }}</span>
                         <span class="workspace-module-phase">Connected</span>
+                    @elseif ($module['id'] === 'markdown')
+                        <span class="workspace-module-count">{{ $documentsCount }}</span>
+                        <span class="workspace-module-label">{{ Str::plural('Document', $documentsCount) }}</span>
+                        <span class="workspace-module-phase">Connected</span>
+                    @elseif ($module['id'] === 'vault')
+                        <span class="workspace-module-count">{{ $vaultEntriesCount }}</span>
+                        <span class="workspace-module-label">{{ Str::plural('Vault entry', $vaultEntriesCount) }}</span>
+                        <span class="workspace-module-phase">Locked separately</span>
                     @else
                         <span class="workspace-module-count" aria-hidden="true">—</span>
                         <span class="sr-only">Count not available.</span>
@@ -65,7 +73,7 @@
                     <p>Create a note to start building your personal workspace.</p>
                 </div>
             @endif
-            <p class="workspace-activity-footer">Markdown Docs and Secure Vault are not connected yet.</p>
+            <p class="workspace-activity-footer">Notes, Markdown Docs, and Secure Vault are connected. Vault secrets stay locked separately.</p>
         </section>
 
         <section class="workspace-panel workspace-quick-actions" aria-labelledby="quick-actions-heading">
@@ -84,7 +92,20 @@
                         <x-icon name="chevron-right" class="workspace-quick-arrow" />
                     </button>
                 </form>
-                @foreach (collect($modules)->where('id', '!=', 'notes') as $module)
+                <form method="POST" action="{{ route('markdown.store') }}">
+                    @csrf
+                    <button type="submit" class="workspace-quick-link workspace-quick-link-button" data-module="markdown">
+                        <span class="workspace-quick-icon"><x-icon name="markdown" /></span>
+                        <span class="workspace-quick-copy"><strong>New Markdown document</strong><span>Create a saved Markdown document</span></span>
+                        <x-icon name="chevron-right" class="workspace-quick-arrow" />
+                    </button>
+                </form>
+                <a href="{{ route('vault.index', ['new' => 1]) }}" class="workspace-quick-link" data-module="vault">
+                    <span class="workspace-quick-icon"><x-icon name="lock" /></span>
+                    <span class="workspace-quick-copy"><strong>New Vault entry</strong><span>Unlock the Vault to save a credential</span></span>
+                    <x-icon name="chevron-right" class="workspace-quick-arrow" />
+                </a>
+                @foreach (collect($modules)->whereNotIn('id', ['notes', 'markdown', 'vault']) as $module)
                     <a href="{{ $module['url'] }}" class="workspace-quick-link" data-module="{{ $module['id'] }}">
                         <span class="workspace-quick-icon"><x-icon :name="$module['icon']" /></span>
                         <span class="workspace-quick-copy"><strong>Open {{ $module['label'] }}</strong><span>Section preview · {{ $module['phase'] }}</span></span>

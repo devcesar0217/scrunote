@@ -12,7 +12,8 @@ class WorkspaceLayoutData
     public function for(Request $request, string $routeName): array
     {
         $navigation = WorkspaceNavigation::items();
-        $page = collect($navigation)->firstWhere('route', $routeName);
+        $page = collect($navigation)->firstWhere('route', $routeName)
+            ?? WorkspaceNavigation::utilityPage($routeName);
         abort_unless($page, 404);
 
         /** @var User $user */

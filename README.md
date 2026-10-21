@@ -1,74 +1,63 @@
-# Scrunote web application — Phase 2, revised
+# Scrunote web application
 
-**Login and registration only**, with logout, remembered login, validation and secure session protection. Password recovery and outbound mail setup have been removed at your request. No email service or mail credentials are required.
+## Current implementation
 
-Registration preserves the existing first name, last name and username fields. The signed-in root is an authentication checkpoint; the shared workspace and modules are not served yet.
+Scrunote is a Laravel web application with protected login/registration and a responsive workspace shell. Implemented modules are **persistent, owner-scoped Notes**, **Markdown Docs**, and **Secure Vault**.
 
-- [Windows PowerShell setup and local verification](docs/PHASE-2-WINDOWS.md)
-- [Revised seven-section phase report](docs/PHASE-2-REPORT.md)
-- The update ZIP's root **README.md** maps every included file to its local destination and lists obsolete files to delete if you applied the earlier Phase 2 package.
+Authenticated users can create, select, search, edit, pin, and delete their own Notes. Notes are stored in MySQL with personal tags, safe limited rich text, a plain-text search projection, and optimistic `lock_version` concurrency protection.
 
-Keep your own `.env` and existing `APP_KEY`. Do not run a destructive database reset. Feature tests require a separate disposable MySQL database/account. Existing dependencies, migrations and future module files are preserved.
+The Notes browser enhancement uses **Tiptap 3** with headings, bold, italic, underline, lists, blockquotes, code blocks, and limited safe links. Title, tag, and content changes autosave after a brief pause; Ctrl/Cmd+S triggers an immediate autosave. Server-side sanitization is the security authority, and the server-rendered forms remain the no-JavaScript baseline.
 
-**Stop at Phase 2 and obtain explicit approval before Phase 3.** The original Laravel scaffold information follows for framework reference.
+Markdown Docs provide owner-scoped Markdown source storage, title/tag/content search, pin/delete, CodeMirror 6 syntax-highlighted editing, split/editor/preview modes, autosave with optimistic locking, safe live preview, and `.md` export. Desktop split mode presents one visible editor scrollbar and proportionally synchronizes source and preview scrolling in either direction. The preview disables raw HTML, accepts only `http`, `https`, and `mailto` links, and intentionally does not render images or support uploads/attachments in this phase.
 
----
+Secure Vault provides typed Login, Server, Database, API Credential, and Secure Note entries. Entries have searchable non-secret metadata and tags; the credential value and encrypted notes are never included in list/search projections or ordinary page markup. The browser UI includes explicit reveal/re-hide, copy controls, a browser-CSPRNG password generator, responsive Vault views, and create/edit/delete/pin workflows.
 
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+## Runtime and safety notes
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+- Notes, Markdown, and Vault routes require the existing authenticated active session. Every record/tag lookup is owner-scoped; another user’s record URL returns 404.
+- State changes use existing CSRF/session protection, server-side validation, unlock rate limiting, and optimistic concurrency checks where applicable.
+- Rich text is restricted to safe semantic markup and `http`, `https`, or `mailto` links. Executable markup, embeds, event attributes, and unsafe URI schemes are removed.
+- Stale Notes, Markdown, and Vault writes are rejected and do not overwrite newer data.
+- Markdown preview uses a restrictive client-side sanitizer after parsing; raw HTML, executable markup, embeds, unsafe URI schemes, and rendered images are excluded. Markdown source remains exportable as entered.
+- Secure Vault uses a separate master password. Argon2id derives a wrapping key; Sodium encrypts a random per-user data key and all sensitive entry payloads. Master passwords and decrypted secret values are not persisted in plaintext.
+- An unlocked Vault uses a server-checked five-minute inactivity expiry and browser inactivity lock. Sensitive Vault operations return HTTP 423 for JSON callers while locked. Successful sensitive requests renew that expiry for no-JavaScript form use as well.
+- Forgotten Vault master passwords cannot recover existing encrypted entries. This web application does **not** claim operating-system key-store protection.
+- Vault custom fields, Wi-Fi/Network entries, imports, sharing, health analysis, folders/projects, and all export formats are intentionally out of scope for this phase.
+- Editable fields intentionally have no visual focus ring, per the requested UI revision. Keyboard interaction remains available.
 
-## About Laravel
+## Local update and verification
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Use the single cumulative `scrunote-update.zip` delivery. It is an updated/new-files overlay for an existing project, not a full repository. Preserve `.env`, `.env.testing`, `APP_KEY`, MySQL credentials, and existing data.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+From the project root after applying the package:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```powershell
+composer install --no-interaction --prefer-dist
+composer check-platform-reqs
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
+php artisan migrate --no-interaction
+npm ci --ignore-scripts
+npm run build
+php artisan view:cache
+php artisan route:list --except-vendor --path=notes
+php artisan route:list --except-vendor --path=markdown
+php artisan route:list --except-vendor --path=vault
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Do not use `composer update`, `npm update`, `composer run setup`, `key:generate`, `migrate:fresh`, `db:wipe`, or rollback commands to apply an update.
 
-## Contributing
+Run the test suite only against a separate disposable MySQL test database/account:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```powershell
+composer test -- --compact
+```
 
-## Code of Conduct
+Run the current PHPUnit suite and browser checks after applying each cumulative update. Native Windows/PHP 8.3/MySQL/browser verification remains your responsibility.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+After local review, reply with one of:
 
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- **Approved — proceed to the next phase.**
+- **Issue found — help me fix the current phase.**
+- **Request changes — revise the current phase.**

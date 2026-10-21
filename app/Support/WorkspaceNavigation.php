@@ -4,6 +4,23 @@ namespace App\Support;
 
 class WorkspaceNavigation
 {
+    /** @return array{id: string, label: string, route: string, icon: string, group: string, description: string, phase: string}|null */
+    public static function utilityPage(string $route): ?array
+    {
+        return match ($route) {
+            'search.index' => [
+                'id' => 'search',
+                'label' => 'Global Search',
+                'route' => 'search.index',
+                'icon' => 'search',
+                'group' => 'utility',
+                'description' => 'Search your private Notes, Markdown Docs, and Vault metadata.',
+                'phase' => 'Phase 7',
+            ],
+            default => null,
+        };
+    }
+
     /** Shell destinations only; these do not expose module records or actions. */
     public static function items(): array
     {

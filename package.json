@@ -16,9 +16,17 @@
         "@laravel/multiplex": "^0.4.1"
     },
     "dependencies": {
+        "@codemirror/commands": "6.10.1",
+        "@codemirror/lang-markdown": "6.3.4",
+        "@codemirror/language": "6.11.3",
+        "@codemirror/state": "6.5.2",
+        "@codemirror/view": "6.38.6",
         "@tabler/icons-webfont": "^3.49.0",
         "@tiptap/core": "^3.32.0",
         "@tiptap/starter-kit": "^3.32.0",
-        "alpinejs": "^3.17.4"
+        "alpinejs": "^3.17.4",
+        "dompurify": "3.4.17",
+        "markdown-it": "14.3.3",
+        "markdown-it-task-lists": "2.1.1"
     }
 }
